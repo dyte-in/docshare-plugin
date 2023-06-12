@@ -4,7 +4,8 @@ import { FileInput, Header, File, ErrorModal } from '../../components'
 import { MainContext } from '../../context';
 import { fetchUrl, getFormData } from '../../utils/helpers';
 import axios from 'axios';
-import { controller, dashboardMessages, errorMessages } from '../../utils/contants';
+import { dashboardMessages, errorMessages } from '../../utils/contants';
+import { controller } from "../../utils/controller";
 
 const Dashboard = () => {
     const { plugin, base, setDocument } = useContext(MainContext);
@@ -18,6 +19,15 @@ const Dashboard = () => {
     useEffect(() => {
         fetchFiles();
     }, [])
+
+    useEffect(() => {
+        plugin.on('file-delete', (data: any) => {
+            setFiles([...files.filter(x => x !== data.fileName)])
+        })
+        return () => {
+            plugin.removeListeners('file-delete');
+        }
+    }, [plugin])
     
     // Load remote documents
     const fetchFiles = async () => {
@@ -31,18 +41,14 @@ const Dashboard = () => {
 
     // Load document
     const onUpload = async () => {
+        setDisabled(true);
+        let blob = await axios.get(search).then(r => new Blob([r.data]));
+        const {formData, fileName } = getFormData(blob, base);
         try {
-            setDisabled(true);
-            let blob = await axios.get(search).then(r => new Blob([r.data]));
-            const formData = getFormData(blob, base);
             const url = await fetchUrl(formData, plugin.authToken, setLoadingVal);
             nextPage(url)
         } catch (e: any) {
-            if (e.code === 'ERR_NETWORK') setError(errorMessages.cors)
-            else setError(errorMessages.upload)
-            setSearch('');
-            setLoadingVal(0);
-            setDisabled(false);
+            handleErrors(e, fileName);
         }
     }
     const onClick = () => {
@@ -52,15 +58,12 @@ const Dashboard = () => {
         file.accept = '.doc,.docx,.ppt,.pptx,.txt,.pdf';
         file.click();
         file.onchange = async ({ target}: { target: any }) => {
-            const formData = getFormData(target.files[0], base);
+            const {formData, fileName } = getFormData(target.files[0], base);
             try {
                 const url = await fetchUrl(formData, plugin.authToken, setLoadingVal);
                 nextPage(url)
-            } catch (e) {
-                setSearch('');
-                setDisabled(false);
-                setLoadingVal(0);
-                setError(errorMessages.upload)
+            } catch (e: any) {
+                handleErrors(e, fileName);
             }
         }
     }
@@ -69,16 +72,29 @@ const Dashboard = () => {
         e.preventDefault();
         let file;
         file = e.dataTransfer.files[0];
-        const formData = getFormData(file, base);
+        const {formData, fileName } = getFormData(file, base);
         try {
             const url = await fetchUrl(formData, plugin.authToken);
             nextPage(url)
-        } catch (e) {
-            setSearch('');
-            setLoadingVal(0);
-            setError(errorMessages.upload)
-            setDisabled(false);
+        } catch (e: any) {
+            handleErrors(e, fileName);
         }
+    }
+
+    const handleErrors = async (e: Error, file: string = '') => {
+        if (e.message === 'ERR_NETWORK') setError(errorMessages.cors)
+        else if (e.message === 'ERR_CANCELED') {
+            try {
+                await axios.delete(`${import.meta.env.VITE_API_BASE}/file/${file}`, {
+                    headers: {"Authorization": `Bearer ${plugin.authToken}`},
+                });
+            } catch (e) {}
+            setError(''); 
+        }
+        else setError(errorMessages.upload)
+        setSearch('');
+        setLoadingVal(0);
+        setDisabled(false);
     }
 
     // Navigate
@@ -112,9 +128,9 @@ const Dashboard = () => {
             await axios.delete(`${import.meta.env.VITE_API_BASE}/file/${fileName}`, {
                 headers: {"Authorization": `Bearer ${plugin.authToken}`},
             });
-            setFiles([...files.filter(x => x !== fileName)])
+            plugin.emit('file-delete', { fileName });
         } catch (e: any) {
-            setError(e.message ?? errorMessages.delete);
+            setError(e.message === 'Network Error' ? errorMessages.cors : errorMessages.delete);
         }
     }
     const onDismiss = () => {
@@ -148,8 +164,8 @@ const Dashboard = () => {
                     loadingVal !== 0 &&
                     <File
                     onDismiss={onDismiss}
-                    label='React India Quiz'
-                    size={getFileSize(search) ?? 0.0}
+                    label='Loading you file...'
+                    size={getFileSize(search) ?? 0}
                     state={loadingVal === 100 ? 'loaded' : 'loading'}
                     loadingVal={loadingVal} />
                 }

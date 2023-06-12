@@ -1,5 +1,8 @@
 import axios from "axios";
-import { controller } from "./contants";
+import { controller, resetContorller } from "./controller";
+
+const CancelToken = axios.CancelToken;
+const source = CancelToken.source();
 
 const throttle = (cb: any, delay: number) => {
     let previousCall = new Date().getTime();
@@ -69,14 +72,15 @@ const colorRgb = (activeColor: string): string => {
 }
 const getFormData = (file: Blob, base: string) => {
     const formData = new FormData();
-    formData.append("file", file, `${base}-${file.name ?? (Math.random()*10000).toFixed(0)}`);
-    return formData;
+    const fileName = `${base}-${file.name ?? (Math.random()*10000).toFixed(0)}`;
+    formData.append("file", file, fileName);
+    return {formData, fileName: fileName };
 }
 const fetchUrl = async (formData: FormData, authToken: string, setLoadingVal?: any) => {
     try {
         const result = await axios({
             method: "post",
-            signal: controller.signal,
+            signal: resetContorller().signal,
             url: `${import.meta.env.VITE_API_BASE}/upload`,
             data: formData,
             headers: {"Authorization": `Bearer ${authToken}`},
@@ -90,8 +94,10 @@ const fetchUrl = async (formData: FormData, authToken: string, setLoadingVal?: a
             return `${import.meta.env.VITE_API_BASE}/file/${result.data.link}`;
         }
     } catch (e: any) {
-       throw new Error(e.message);
+       throw new Error(e.code);
     }
 }
+
+
 
 export { getFormData, fetchUrl, throttle, color, colorRgb }

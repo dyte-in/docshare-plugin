@@ -1,8 +1,8 @@
 "use strict";
 import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
+import App from './App'
 import './index.css'
-import { MainProvider } from './context/index.tsx';
+import { MainProvider } from './context/index';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
    <MainProvider>

@@ -18,8 +18,6 @@ export const tools: ToolData[] = [
     {icon: 'download', tool: 'export-tool'},
 ]
 
-export const controller = new AbortController();
-
 export const dashboardMessages = {
     'success': 'No Recent Files. Files are retained only for the duration of this session.',
     'error': 'An Error occured. Could not fetch files.',
