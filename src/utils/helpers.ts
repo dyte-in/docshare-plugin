@@ -1,5 +1,5 @@
 import axios from "axios";
-import { controller, resetContorller } from "./controller";
+import { resetContorller } from "./controller";
 
 const CancelToken = axios.CancelToken;
 const source = CancelToken.source();
