@@ -6,7 +6,7 @@ import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useContext, useEffect, useRef, useState } from 'react';
 import {ToolbarRight, ToolbarLeft } from '../../components';
 import CanvasRef from '../../hooks/StatefulRef';
-import { color, fetchUrl, getFormData, throttle } from '../../utils/helpers';
+import { color, throttle } from '../../utils/helpers';
 import { CursorPoints, ToolbarState } from '../../utils/types';
 import { options } from '../../utils/contants';
 import { MainContext } from '../../context';
