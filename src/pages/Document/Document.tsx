@@ -50,7 +50,12 @@ export default function PDFDocument(props: DocumentProps) {
     }
 
     // add styles
-    docEl.current.classList.add('max-height-canvas');
+    if (scale > 1) {
+      docEl.current?.classList.remove('min-height-canvas');
+    } else {
+      docEl.current.classList.add('max-height-canvas');
+    }
+    
 
     // reset scale
     window.onresize = () => {
@@ -79,14 +84,12 @@ export default function PDFDocument(props: DocumentProps) {
   // Helper Methods
   const handleNext = () => {
     setCurrentPage(Math.min(currentPage+1, pageCount))
-    setScale(1);
     if (!docEl.current) return;
     updateDocPosition();
     docEl.current.classList.add('min-height-canvas');
   }
   const handlePrev = () => {
     setCurrentPage(Math.max(currentPage-1, 1))
-    setScale(1);
     if (!docEl.current) return;
     updateDocPosition();
     docEl.current.classList.add('min-height-canvas');

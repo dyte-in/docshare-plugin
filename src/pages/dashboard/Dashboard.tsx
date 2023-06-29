@@ -41,6 +41,7 @@ const Dashboard = () => {
 
     // Load document
     const onUpload = async () => {
+        if (!search) return;
         setDisabled(true);
         let blob = await axios.get(search).then(r => new Blob([r.data]));
         const {formData, fileName } = getFormData(blob, base);
