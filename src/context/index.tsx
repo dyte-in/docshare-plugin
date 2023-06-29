@@ -14,12 +14,14 @@ const MainProvider = ({ children }: { children: any }) => {
     const setDocument = async (url: string) => {
         if (plugin) {
             await plugin.stores.get('doc').set('url', url);
+            updateDocument(url)
         }
     }
     const setCurrentPage = async (page: number) => {
         await setData();
         if (plugin) {
             await plugin.stores.get('doc').set('page', page);
+            updateCurrentPage(page);
         }
     };
     const setData = async () => {
@@ -27,6 +29,7 @@ const MainProvider = ({ children }: { children: any }) => {
         if (!svg) return;
         if (plugin) {
             await plugin.stores.get('doc').set('annotations', { ...data, [currentPage]: svg.innerHTML });
+            updateData({ ...data, [currentPage]: svg.innerHTML });
         }
     }
 
