@@ -27,7 +27,7 @@ export default function PDFDocument(props: DocumentProps) {
   const tool = useRef<ToolbarState>('none');
   const selectedElements = useRef<Set<string>>(new Set());
   const [docEl, docElUpdate, docElRef] = CanvasRef();
-  const { annStore, setDocument, doc, currentPage, setCurrentPage, userId } = useContext(MainContext);
+  const { annStore, setDocument, doc, currentPage, setCurrentPage, userId, setAnnStore } = useContext(MainContext);
 
   const [scale, setScale] = useState<number>(1);
   const [draw, setDraw] = useState<boolean>(false);
@@ -216,6 +216,15 @@ export default function PDFDocument(props: DocumentProps) {
     await annStore?.set(id, html);
   }
 
+  useEffect(() => {
+    plugin.addListener('remote-erase-all', () => {
+      eraseAll(true);
+    });
+    return () => {
+      plugin.removeListeners('remote-erase-all');
+    }
+  }, [])
+
   // update remote annotations
   useEffect(() => {
     if (!annStore) return;
@@ -316,7 +325,10 @@ export default function PDFDocument(props: DocumentProps) {
     if (!svg) return;
     svg.innerHTML = '';
     if (remote) return;
-   // TODO: implement
+    plugin.emit('remote-erase-all');
+    plugin.stores.delete(annStore.name);
+    const AnnotationStore = plugin.stores.create(`annotation-page-${currentPage}`);
+    setAnnStore(AnnotationStore)
   }
 
   // Rect

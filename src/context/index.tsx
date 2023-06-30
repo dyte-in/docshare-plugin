@@ -77,7 +77,7 @@ const MainProvider = ({ children }: { children: any }) => {
     }, [])
 
     return (
-        <MainContext.Provider value={{ annStore, base, userId, plugin, doc, currentPage, setDocument, setCurrentPage }}>
+        <MainContext.Provider value={{ annStore, base, userId, plugin, doc, currentPage, setAnnStore, setDocument, setCurrentPage }}>
             {children}
         </MainContext.Provider>
     )
