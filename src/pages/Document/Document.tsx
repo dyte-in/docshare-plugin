@@ -11,6 +11,7 @@ import { CursorPoints, ToolbarState } from '../../utils/types';
 import { options } from '../../utils/contants';
 import { MainContext } from '../../context';
 import DytePlugin from '@dytesdk/plugin-sdk';
+import { ToolbarTop } from '../../components/toolbar/Toolbar';
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/legacy/build/pdf.worker.min.js',
   import.meta.url,
@@ -552,8 +553,8 @@ export default function PDFDocument(props: DocumentProps) {
           style={{ color: color(activeColor) }}></textarea>    
         </Page>
       </Document>
+      <ToolbarTop scale={scale} selectActiveTool={selectActiveTool} />
       <ToolbarRight
-        scale={scale}
         activeColor={activeColor}
         activeTool={activeTool}
         onBack={HandleBack}

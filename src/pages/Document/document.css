@@ -1,5 +1,5 @@
 .view-box {
-    @apply relative box-border justify-center flex flex-1 items-center justify-center;
+    @apply relative box-border flex flex-1 items-center justify-center;
     height: 100vh;
     width: 100vw;
 }
