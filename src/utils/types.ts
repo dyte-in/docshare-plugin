@@ -23,4 +23,5 @@ export interface CursorPoints {
 export interface ToolData {
   icon: keyof typeof iconPack;
   tool: ToolbarState;
+  label: string;
 }

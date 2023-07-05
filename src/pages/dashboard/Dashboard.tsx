@@ -41,6 +41,7 @@ const Dashboard = () => {
 
     // Load document
     const onUpload = async () => {
+        if (!search) return;
         setDisabled(true);
         let blob = await axios.get(search).then(r => new Blob([r.data]));
         const {formData, fileName } = getFormData(blob, base);
@@ -129,6 +130,7 @@ const Dashboard = () => {
                 headers: {"Authorization": `Bearer ${plugin.authToken}`},
             });
             plugin.emit('file-delete', { fileName });
+            setFiles([...files.filter(x => x !== fileName)]);
         } catch (e: any) {
             setError(e.message === 'Network Error' ? errorMessages.cors : errorMessages.delete);
         }

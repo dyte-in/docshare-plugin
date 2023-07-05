@@ -17,7 +17,7 @@ const Header = (props: HeaderProps) => {
     <div className="header-container">
     <img src={logo} className="header-logo" />
     <Input
-      placeholder='Paste a link to your PDF document'
+      placeholder='Paste a link to your document.'
       icon='search'
       value={search}
       onChange={updateSearch}
