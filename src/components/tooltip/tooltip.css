@@ -8,11 +8,9 @@
     border-radius: 4px;
 }
 
-.tooltip-container:hover {
-    .tooltip {
-        @apply items-center justify-center flex flex-row;
-        min-width: 80px;
-    }
+.tooltip-container:hover .tooltip {
+    @apply items-center justify-center flex flex-row;
+    min-width: 80px;
 }
 
 .tooltip-left {

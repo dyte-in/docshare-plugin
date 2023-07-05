@@ -517,7 +517,15 @@ export default function PDFDocument(props: DocumentProps) {
   }
 
   // Go Back
-  const HandleBack = () => {
+  const HandleBack = async () => {
+    for(let i = 1; i <= pageCount; i++) {
+      try {
+        await plugin.stores.delete(`annotation-page-${i}`);
+      } catch (e) {};
+    }
+    setAnnStore(undefined);
+    setCurrentPage(0);
+    setPageCount(0)
     setDocument('');
   }
 
