@@ -81,7 +81,7 @@ const fetchUrl = async (formData: FormData, authToken: string, setLoadingVal?: a
         const result = await axios({
             method: "post",
             signal: resetContorller().signal,
-            url: `${import.meta.env.VITE_API_BASE}/upload`,
+            url: `${import.meta.env.VITE_API_BASE}/docshare`,
             data: formData,
             headers: {"Authorization": `Bearer ${authToken}`},
             onUploadProgress: () => {

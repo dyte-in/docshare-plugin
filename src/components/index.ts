@@ -7,16 +7,18 @@ import { ToolbarRight, ToolbarLeft } from './toolbar/Toolbar';
 import FileInput from './fileInput/FileInput';
 import Loader from './loader/Loader';
 import ErrorModal from './errorModal/ErrorModal';
+import Tooltip from './tooltip/Tooltip';
 
 export {
-    Header,
     Icon,
-    Button,
     File,
     Input,
-    ToolbarRight,
-    ToolbarLeft,
-    FileInput,
+    Button,
     Loader,
+    Header,
+    Tooltip,
+    FileInput,
     ErrorModal,
+    ToolbarLeft,
+    ToolbarRight,
 };

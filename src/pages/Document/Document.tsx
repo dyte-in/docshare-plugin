@@ -11,6 +11,7 @@ import { CursorPoints, ToolbarState } from '../../utils/types';
 import { options } from '../../utils/contants';
 import { MainContext } from '../../context';
 import DytePlugin from '@dytesdk/plugin-sdk';
+import { ToolbarTop } from '../../components/toolbar/Toolbar';
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/legacy/build/pdf.worker.min.js',
   import.meta.url,
@@ -27,7 +28,7 @@ export default function PDFDocument(props: DocumentProps) {
   const tool = useRef<ToolbarState>('none');
   const selectedElements = useRef<Set<string>>(new Set());
   const [docEl, docElUpdate, docElRef] = CanvasRef();
-  const { setDocument, doc, currentPage, setCurrentPage, userId, data } = useContext(MainContext);
+  const { annStore, setDocument, doc, currentPage, setCurrentPage, userId, setAnnStore } = useContext(MainContext);
 
   const [scale, setScale] = useState<number>(1);
   const [draw, setDraw] = useState<boolean>(false);
@@ -47,11 +48,15 @@ export default function PDFDocument(props: DocumentProps) {
     if (x === 0 && y === 0) return;
     if (!dimensions) {
       setDimensions({ x, y });
-      loadRemoteAnnotations();
     }
 
     // add styles
-    docEl.current.classList.add('max-height-canvas');
+    if (scale > 1) {
+      docEl.current?.classList.remove('min-height-canvas');
+    } else {
+      docEl.current.classList.add('max-height-canvas');
+    }
+    
 
     // reset scale
     window.onresize = () => {
@@ -59,19 +64,6 @@ export default function PDFDocument(props: DocumentProps) {
       if (!docEl.current) return;
       updateDocPosition();
       docEl.current.classList.add('min-height-canvas');
-    }
-
-    // load annotations
-    if (data[currentPage]) {
-      const svg = document.getElementById('svg');
-      if (!svg) return;
-      svg.innerHTML = data[currentPage];
-      const nodes = svg.childNodes;
-      nodes.forEach((n) => {
-        n.addEventListener('mousemove', () => {
-          selectElement(n);
-        })
-      })
     }
   }, [docElUpdate])
 
@@ -90,47 +82,15 @@ export default function PDFDocument(props: DocumentProps) {
     }
   }, [scale])
 
-  // remote annotations
-  const loadRemoteAnnotations = () => {
-    plugin.addListener('remote-erase-all', async () => {
-      eraseAll(true);
-    })
-    plugin.addListener('remote-el', ({ el, user, id }) => {
-      if (user === userId) return;
-      const svg = document.getElementById('svg');
-      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.innerHTML = el;
-      if (!svg) return;
-      svg.appendChild(g);
-      el = document.getElementById(id);
-      el.addEventListener('mousemove', () => {
-        selectElement(el);
-      })
-    })
-    plugin.addListener('remote-erase', ({ idList }) => {
-      idList.map((id: string) => {
-        const doc = document.getElementById(id);
-        const p = doc?.parentElement;
-        if (p && p.nodeName === 'g') {
-            p?.remove();
-        } else {
-          doc?.remove();
-        }
-      })
-    })
-  }
-
   // Helper Methods
   const handleNext = () => {
     setCurrentPage(Math.min(currentPage+1, pageCount))
-    setScale(1);
     if (!docEl.current) return;
     updateDocPosition();
     docEl.current.classList.add('min-height-canvas');
   }
   const handlePrev = () => {
     setCurrentPage(Math.max(currentPage-1, 1))
-    setScale(1);
     if (!docEl.current) return;
     updateDocPosition();
     docEl.current.classList.add('min-height-canvas');
@@ -218,11 +178,6 @@ export default function PDFDocument(props: DocumentProps) {
       cont.style.justifyContent = 'start';
     }
   }
-  const updateAnnotationStore = async () => {
-    const svg = document.getElementById('svg');
-    if (!svg) return;
-    await plugin.stores.get('doc').set('annotations', { ...data, [currentPage]: svg.innerHTML });
-  }
 
   // Cursor Listeners
   const onMouseDown = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
@@ -257,6 +212,70 @@ export default function PDFDocument(props: DocumentProps) {
     if (activeTool === 'drawing-tool-pencil' || activeTool === 'drawing-tool-highlight') endPath();
     setDraw(false);
   }
+
+  const updateAnnotations = async (html: string, id: string) => {
+    await annStore?.set(id, html);
+  }
+
+  useEffect(() => {
+    plugin.addListener('remote-erase-all', () => {
+      eraseAll(true);
+    });
+    return () => {
+      plugin.removeListeners('remote-erase-all');
+    }
+  }, [])
+
+  // update remote annotations
+  useEffect(() => {
+    if (!annStore) return;
+    // subscribe to data changes
+    annStore.subscribe('*', (a: any) => {
+      const key = Object.keys(a)[0];
+      const value = a[key];
+
+      if (value) {
+        // shape added
+        const svg = document.getElementById('svg');
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.innerHTML = value;
+        if (!svg) return;
+        svg.appendChild(g);
+        const el = document.getElementById(key);
+        el?.addEventListener('mousemove', () => {
+          selectElement(el);
+        })
+        return;
+      }
+      // shape deleted
+      const el =  document.getElementById(key);
+      const p = el?.parentElement;
+      if (p && p.nodeName === 'g') {
+          p?.remove();
+      } else {
+        el?.remove();
+      }
+    })
+  }, [annStore])
+  // load inital annotations
+  useEffect(() => {
+    if (!annStore || !dimensions) return;
+    const svg = document.querySelector('svg');
+    const data = annStore.getAll();
+   
+    if (!svg) return;
+    svg.innerHTML = '';
+
+    for (const id in data) {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.innerHTML = data[id];
+      svg.appendChild(g);
+      const el = document.getElementById(id);
+      el?.addEventListener('mousemove', () => {
+        selectElement(el);
+      })
+    }
+  }, [dimensions, annStore])
 
   // Draw & Highlight
   const startPath = (x: number, y: number) => {
@@ -296,9 +315,9 @@ export default function PDFDocument(props: DocumentProps) {
   };
   const endPath = () => {
     const el = document.getElementById(`${userId}-${EL_COUNT}`);
-    plugin.emit('remote-el', { el: el?.outerHTML, user: userId, id: el?.id });
     EL_COUNT++;
-    updateAnnotationStore();
+    if (!el?.outerHTML) return;
+    updateAnnotations(el.outerHTML, el.id);
   };
 
   // Erase & Erase All
@@ -308,7 +327,9 @@ export default function PDFDocument(props: DocumentProps) {
     svg.innerHTML = '';
     if (remote) return;
     plugin.emit('remote-erase-all');
-    updateAnnotationStore();
+    plugin.stores.delete(annStore.name);
+    const AnnotationStore = plugin.stores.create(`annotation-page-${currentPage}`);
+    setAnnStore(AnnotationStore)
   }
 
   // Rect
@@ -334,9 +355,9 @@ export default function PDFDocument(props: DocumentProps) {
     rect.style.stroke = color(activeColor);
     rect.style.strokeWidth = '4';
     rect.style.fill = 'none';
-    plugin.emit('remote-el', { el: rect.outerHTML, user: userId, id: rect.id });
     svg?.appendChild(rect);
-    updateAnnotationStore();
+    if (!rect?.outerHTML) return;
+    updateAnnotations(rect.outerHTML, rect.id);
   };
 
   // Text
@@ -426,10 +447,10 @@ export default function PDFDocument(props: DocumentProps) {
     text.innerHTML = `<div style="width:${w}px; height:${h}px; color:${color(activeColor)}">${elem.value}</div>`;
     text.style.fontSize = '14px';
     text.style.fontFamily = 'Open Sans';
-    plugin.emit('remote-el', { el: text.outerHTML, user: userId, id: text.id });
     svg?.appendChild(text);
     elem.style.display = 'none';
-    updateAnnotationStore();
+    if (!text?.outerHTML) return;
+    updateAnnotations(text.outerHTML, text.id);
   }
 
   // Erase
@@ -444,9 +465,10 @@ export default function PDFDocument(props: DocumentProps) {
       doc?.remove();
     })
     const val = Array.from(selectedElements.current);
-    plugin.emit('remote-erase', { idList: val });
     selectedElements.current = new Set();
-    updateAnnotationStore();
+    val.forEach((v) => {
+      annStore.delete(v);
+    })
   }
 
   // Zoom
@@ -465,6 +487,7 @@ export default function PDFDocument(props: DocumentProps) {
   };
 
   // Export
+  // TODO: export entire document
   const exportPage = () => {
     const doc = docEl.current;
     const svg = document.getElementById('svg');
@@ -494,7 +517,15 @@ export default function PDFDocument(props: DocumentProps) {
   }
 
   // Go Back
-  const HandleBack = () => {
+  const HandleBack = async () => {
+    for(let i = 1; i <= pageCount; i++) {
+      try {
+        await plugin.stores.delete(`annotation-page-${i}`);
+      } catch (e) {};
+    }
+    setAnnStore(undefined);
+    setCurrentPage(0);
+    setPageCount(0)
     setDocument('');
   }
 
@@ -520,7 +551,7 @@ export default function PDFDocument(props: DocumentProps) {
             id="svg" 
             xmlns="http://www.w3.org/2000/svg"
             className={`${draw ? 'active-cursor' : ''}`}
-            viewBox={`0 0 ${dimensions.x} ${dimensions.y}`}></svg>
+            viewBox={`0 0 ${dimensions?.x} ${dimensions?.y}`}></svg>
           )}
           <div id="tracer-element"></div>
           <textarea 
@@ -530,8 +561,8 @@ export default function PDFDocument(props: DocumentProps) {
           style={{ color: color(activeColor) }}></textarea>    
         </Page>
       </Document>
+      <ToolbarTop scale={scale} selectActiveTool={selectActiveTool} />
       <ToolbarRight
-        scale={scale}
         activeColor={activeColor}
         activeTool={activeTool}
         onBack={HandleBack}

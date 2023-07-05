@@ -9,7 +9,7 @@
     @apply h-16 w-16 m-0 p-0 text-[#646464] ;   
 }
 .file-input p {
-    @apply font-thin p-0 mx-0 my-1 text-base text-[#323232];
+    @apply text-center font-thin p-0 mx-0 my-1 text-base text-[#323232];
 }
 .file-input p span {
     @apply font-semibold text-[#2160FD];

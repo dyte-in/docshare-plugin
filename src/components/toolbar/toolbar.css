@@ -5,7 +5,7 @@
     @apply fixed top-2 right-2 z-50 flex flex-col items-end;
 }
 .back-icon {
-    @apply bg-gray-600 rounded-md h-9 w-9 p-1 text-white ml-2 cursor-pointer border-[1px] border-solid border-blue-900;
+    @apply bg-slate-300 rounded-md h-9 w-9 p-2 border-slate-400 ml-1.5 cursor-pointer border-[1px] border-solid;
 }
 .toolbar-icon {
     @apply h-auto !w-7 cursor-pointer;
@@ -16,19 +16,23 @@
 .toolbar-right span {
     @apply mx-2;
 }
+.toolbar-top {
+    @apply fixed top-2 right-12 mr-0.5 p-2 border-solid border-[1px] border-gray-400 flex flex-row items-center rounded-md text-xs bg-[#E9F5FF] text-[#7e8991] z-50;
+}
 .toolbar-page {
-    @apply p-2 border-solid border-[1px] border-gray-400 flex flex-row items-center rounded-md text-xs bg-[#E9F5FF] text-[#7e8991];
+    @apply fixed p-2 border-solid border-[1px] border-gray-400 flex flex-row items-center rounded-md text-xs bg-[#E9F5FF] text-[#7e8991];
 }
 .toolbar-tools {
-    @apply p-2 border-solid border-[1px] border-gray-400 rounded-md text-xs bg-[#E9F5FF] text-[#7e8991] items-center justify-start w-fit mt-2 flex-1;
-    max-height: 350px;
+    @apply p-1 border-solid border-[1px] border-gray-400 rounded-md text-xs bg-[#E9F5FF] text-[#7e8991] items-center justify-start w-fit mt-1.5 flex-1;
     overflow-y: auto;
+    overflow-x: visible;
 }
 .toolbar-tools .active {
-    @apply text-white bg-blue-600 rounded-md;
+    @apply text-white bg-blue-300 rounded-sm;
+    border-radius: 4px;
 }
 .color-selector {
-    @apply p-1 absolute bottom-0 right-16 rounded-md border-solid border-[1px] border-gray-400 bg-[#E9F5FF] flex flex-row !flex-wrap w-24 items-center justify-center;
+    @apply p-1 absolute bottom-0 right-11 rounded-md border-solid border-[1px] border-gray-400 bg-[#E9F5FF] flex flex-row !flex-wrap w-24 items-center justify-center;
     max-height: 300px;
 }
 .color {
@@ -51,9 +55,9 @@
 .toolbar-tools .olive { @apply bg-lime-800 }
 
 
-@media only screen and (max-height: 400px) {
+@media only screen and (max-height: 360px) {
     .toolbar-tools {
-        max-height: 180px;
+        max-height: 50vh;
     }
 }
 

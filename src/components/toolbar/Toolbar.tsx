@@ -1,12 +1,11 @@
 import './toolbar.css';
-import { Icon } from '..';
+import { Icon, Tooltip } from '..';
 import { ToolbarState } from '../../utils/types';
 import { colors, tools } from '../../utils/contants';
 import { useEffect, useRef } from 'react';
 
 
 interface ToolbarRightProps {
-  scale: number;
   activeColor: string;
   activeTool: ToolbarState;
   onBack: () => void;
@@ -21,20 +20,20 @@ interface ToolbarLeftProps {
   currentPage: number;
 }
 
+interface ToolbarTopProps {
+  scale: number;
+  selectActiveTool: (state: ToolbarState) => void;
+}
+
 const ToolbarRight = (props: ToolbarRightProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const {
-    scale,
     activeTool,
     activeColor,
     onBack,
     setActiveColor,
     selectActiveTool,
   } = props;
-
-  const updateTool = (e: ToolbarState) => {
-    selectActiveTool(e)
-  };
 
   useEffect(() => {
     window.onclick = (e: any) => {
@@ -51,22 +50,39 @@ const ToolbarRight = (props: ToolbarRightProps) => {
         ref.current.style.display = 'none'; 
       }
     }
+
+    const resizeEventListener = () => {
+      const height = document.body.clientHeight;
+      const el = document.getElementById('toolbar');
+      if (!el) return;
+      if (height > 360) {
+        el.style.overflowY = 'visible';
+      }
+      else {
+        el.style.overflowY = 'auto';
+      }
+    }
+
+    window.addEventListener('resize', resizeEventListener);
+    resizeEventListener();
+
+    return () => {
+      window.removeEventListener('resize', resizeEventListener);
+    }
+    
   }, [])
 
   return (
     <div className="toolbar-right">
-      <div className="row">
-        <div className="toolbar-page">
-          <Icon onClick={() => updateTool('zoom-in-tool')} className="toolbar-icon" icon='zoomIn' />
-          <span>{Math.round(scale * 100)}%</span>
-          <Icon onClick={() => updateTool('zoom-out-tool')} className="toolbar-icon" icon='zoomOut' />
-        </div>
+        <Tooltip label="Dismiss" align='bottom-left'>
         <Icon icon="dismiss" className="back-icon" onClick={onBack} />
-      </div>
-      <div className="toolbar-tools">
+        </Tooltip>
+      <div className="toolbar-tools" id="toolbar">
         {
-          tools.map(({icon, tool}) => (
+          tools.map(({icon, tool, label }) => (
+            <Tooltip label={label}>
             <Icon key={tool} icon={icon} onClick={() => selectActiveTool(tool)} className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
+            </Tooltip>
           ))
         }
         <div id="color" className={`color ${activeColor}`}></div>
@@ -89,15 +105,37 @@ const ToolbarLeft = (props: ToolbarLeftProps) => {
   return (
     <div className="toolbar-left">
       <div className="toolbar-page">
+        <Tooltip label="Previous" align='bottom-right'>
         <Icon onClick={onPrev} className="toolbar-icon" icon='previous' />
+        </Tooltip>
         Page {currentPage}/{pageCount}
+        <Tooltip label="Next" align='bottom-right'>
         <Icon onClick={onNext} className="toolbar-icon" icon='next' />
+        </Tooltip>
       </div>
     </div>
   )
 }
 
+const ToolbarTop = (props: ToolbarTopProps) => {
+  const { scale, selectActiveTool } = props;
+  const updateTool = (e: ToolbarState) => {
+    selectActiveTool(e)
+  };
+  return (
+    <div className="toolbar-top">
+       <Tooltip label="Zoom In" align='bottom-left'>
+         <Icon onClick={() => updateTool('zoom-in-tool')} className="toolbar-icon" icon='zoomIn' />
+       </Tooltip>
+       <span>{Math.round(scale * 100)}%</span>
+       <Tooltip label="Zoom Out" align='bottom-left'>
+       <Icon onClick={() => updateTool('zoom-out-tool')} className="toolbar-icon" icon='zoomOut' />
+       </Tooltip>
+     </div>
+ )
+}
 export {
   ToolbarRight,
   ToolbarLeft,
+  ToolbarTop,
 }
