@@ -322,7 +322,6 @@ export default function PDFDocument(props: DocumentProps) {
     const path = document.createElementNS('http://www.w3.org/2000/svg','path'); 
     path.setAttribute('stroke-linejoin', 'round');
     path.onpointerenter = () => {
-      console.log('here...');
       selectElement(path);
     }
     path.setAttribute('id',`${userId}-${EL_COUNT}`);
@@ -367,7 +366,8 @@ export default function PDFDocument(props: DocumentProps) {
     svg.innerHTML = '';
     if (remote) return;
     plugin.emit('remote-erase-all');
-    plugin.stores.delete(annStore.name);
+    const store = plugin.stores.get(annStore.name);
+    if (store) plugin.stores.delete(annStore.name);
     const AnnotationStore = plugin.stores.create(`annotation-page-${currentPage}`);
     setAnnStore(AnnotationStore)
   }
