@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600&display=swap');
 * {
     box-sizing: border-box;
+    touch-action: none !important;
   }
 
 body {
@@ -9,6 +10,7 @@ body {
   background-image:
   linear-gradient(to right, theme('colors.bg.400') 0.063rem, transparent 0.063rem),
   linear-gradient(to bottom, theme('colors.bg.400') 0.063rem, transparent 0.063rem);
+  -ms-touch-action: none;
 }
 
 .row {

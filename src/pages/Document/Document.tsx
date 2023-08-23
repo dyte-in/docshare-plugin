@@ -213,6 +213,45 @@ export default function PDFDocument(props: DocumentProps) {
     setDraw(false);
   }
 
+  const onTouchStart = (e: any) => {
+    var touch = e.touches[0];
+    var cx = touch.clientX;
+    var cy = touch.clientY;
+    const { x, y } = getCoords(cx, cy);
+    if (activeTool === 'drawing-tool-pencil' || activeTool === 'drawing-tool-highlight') startPath(x, y);
+    setPoints({
+      ...points,
+      xP: x,
+      yP: y,
+    })
+    setDraw(true);
+  };
+  const onTouchMove = (e: any) => {
+    var touch = e.touches[0];
+    var cx = touch.clientX;
+    var cy = touch.clientY;
+    const { x, y } = getCoords(cx, cy);
+    if (activeTool === 'drawing-tool-shape' || activeTool === 'drawing-tool-text') enableTracer(x, y); 
+    if (activeTool === 'drawing-tool-pencil' || activeTool === 'drawing-tool-highlight') updatePath(x, y);
+    setPoints({
+      ...points,
+      xC: x,
+      yC: y,
+    })
+  };
+  const onTouchEnd = (e: any) => {
+    e.preventDefault();
+    var touch = e.changedTouches[0];
+    var cx = touch.clientX;
+    var cy = touch.clientY;
+    const { x, y } = getCoords(cx, cy);
+    if (activeTool === 'drawing-tool-shape') drawRect(x, y);
+    if (activeTool === 'drawing-tool-text') drawText(x, y);
+    if (activeTool === 'drawing-tool-erase') eraseElements();
+    if (activeTool === 'drawing-tool-pencil' || activeTool === 'drawing-tool-highlight') endPath();
+    setDraw(false);
+  };
+
   const updateAnnotations = async (html: string, id: string) => {
     await annStore?.set(id, html);
   }
@@ -282,7 +321,7 @@ export default function PDFDocument(props: DocumentProps) {
     const svg = document.getElementById('svg') as any;
     const path = document.createElementNS('http://www.w3.org/2000/svg','path'); 
     path.setAttribute('stroke-linejoin', 'round');
-    path.onmouseenter = () => {
+    path.onpointerenter = () => {
       selectElement(path);
     }
     path.setAttribute('id',`${userId}-${EL_COUNT}`);
@@ -320,14 +359,15 @@ export default function PDFDocument(props: DocumentProps) {
     updateAnnotations(el.outerHTML, el.id);
   };
 
-  // Erase & Erase All
+  // Erase All
   const eraseAll = (remote: boolean = false) => {
     const svg = document.getElementById('svg');
     if (!svg) return;
     svg.innerHTML = '';
     if (remote) return;
     plugin.emit('remote-erase-all');
-    plugin.stores.delete(annStore.name);
+    const store = plugin.stores.get(annStore.name);
+    if (store) plugin.stores.delete(annStore.name);
     const AnnotationStore = plugin.stores.create(`annotation-page-${currentPage}`);
     setAnnStore(AnnotationStore)
   }
@@ -341,7 +381,7 @@ export default function PDFDocument(props: DocumentProps) {
     rect.setAttribute('id', `${userId}-${EL_COUNT}`);
     EL_COUNT++;
     rect.setAttribute('rx', '8')
-    rect.onmouseenter = () => {
+    rect.onpointerenter = () => {
       selectElement(rect);
     }
     const l = Math.min(points.xP, x)/ xS;
@@ -433,10 +473,9 @@ export default function PDFDocument(props: DocumentProps) {
 
     const svg = document.getElementById('svg');
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-    text.onmouseenter = () => {
+    text.onpointerenter = () => {
       selectElement(text);
     }
-
     text.setAttribute('x', (l + 6).toString());
     text.setAttribute('y', (t + 6).toString());
     text.setAttribute('width', w.toString());
@@ -542,8 +581,11 @@ export default function PDFDocument(props: DocumentProps) {
           pageNumber={currentPage}
           renderMode='canvas'
           onMouseMove={throttle(onMouseMove, 15)} 
+          onTouchMove={throttle(onTouchMove, 15)}
           onMouseDown={onMouseDown}
+          onTouchEnd={onTouchEnd}
           onMouseUp={onMouseUp}
+          onTouchStart={onTouchStart}
           renderAnnotationLayer={false}
         >
           {dimensions?.x && dimensions?.y && (
