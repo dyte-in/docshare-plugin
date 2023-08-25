@@ -11,6 +11,8 @@ const MainProvider = ({ children }: { children: any }) => {
     const [annStore, setAnnStore] = useState<DyteStore>();
     const [currentPage, updateCurrentPage] = useState<number>(0);
     const [isRecorder, setIsRecorder] = useState<boolean>(false);
+    // TODO: set follow id from web-core
+    const [followId, setFollowId] = useState<string>('');
     
     const setDocument = async (url: string) => {
         if (plugin) {
@@ -49,9 +51,10 @@ const MainProvider = ({ children }: { children: any }) => {
         // define constants used across the app
         const id = await dytePlugin.room.getID();
         const userId = await dytePlugin.room.getPeer();
+        const isRec = userId.payload.isRecorder ?? userId.payload.isHidden;
         setBase(id.payload.roomName);
         setUserId(userId.payload.peer.id);
-        setIsRecorder(userId.payload.isRecorder ?? userId.payload.isHidden)
+        setIsRecorder(isRec);
 
         // subscribe to store    
         DocumentStore.subscribe('url', ({ url }) => {
@@ -60,6 +63,9 @@ const MainProvider = ({ children }: { children: any }) => {
         DocumentStore.subscribe('page', ({ page }) => {
             updateCurrentPage(page);
         });
+
+        // set followId
+        dytePlugin.room.on('config', ({ payload }) => setFollowId(payload.followId));
 
         // load initial data
         const currUrl = DocumentStore.get('url');
@@ -79,7 +85,7 @@ const MainProvider = ({ children }: { children: any }) => {
     }, [])
 
     return (
-        <MainContext.Provider value={{ isRecorder, annStore, base, userId, plugin, doc, currentPage, setAnnStore, setDocument, setCurrentPage }}>
+        <MainContext.Provider value={{ followId, isRecorder, annStore, base, userId, plugin, doc, currentPage, setAnnStore, setDocument, setCurrentPage }}>
             {children}
         </MainContext.Provider>
     )
