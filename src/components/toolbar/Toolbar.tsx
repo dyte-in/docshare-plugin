@@ -79,8 +79,8 @@ const ToolbarRight = (props: ToolbarRightProps) => {
         </Tooltip>
       <div className="toolbar-tools" id="toolbar">
         {
-          tools.map(({icon, tool, label }) => (
-            <Tooltip label={label}>
+          tools.map(({icon, tool, label }, index) => (
+            <Tooltip key={index} label={label}>
             <Icon key={tool} icon={icon} onClick={() => selectActiveTool(tool)} className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
             </Tooltip>
           ))

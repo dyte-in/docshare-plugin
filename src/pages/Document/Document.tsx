@@ -49,22 +49,6 @@ export default function PDFDocument(props: DocumentProps) {
     if (!dimensions) {
       setDimensions({ x, y });
     }
-
-    // add styles
-    if (scale > 1) {
-      docEl.current?.classList.remove('min-height-canvas');
-    } else {
-      docEl.current.classList.add('max-height-canvas');
-    }
-    
-
-    // reset scale
-    window.onresize = () => {
-      setScale(1);
-      if (!docEl.current) return;
-      updateDocPosition();
-      docEl.current.classList.add('min-height-canvas');
-    }
   }, [docElUpdate])
 
   // tools
@@ -75,24 +59,17 @@ export default function PDFDocument(props: DocumentProps) {
     if (activeTool === 'export-tool') exportPage();
   }, [activeTool, draw])
 
-  // adjust styles according to scale
-  useEffect(() => {
-    if (scale <= 1) {
-      docEl.current?.classList.add('max-height-canvas');
-    }
-  }, [scale])
-
   // Helper Methods
   const handleNext = () => {
     setCurrentPage(Math.min(currentPage+1, pageCount))
     if (!docEl.current) return;
-    updateDocPosition();
+    updateDocPosition(scale);
     docEl.current.classList.add('min-height-canvas');
   }
   const handlePrev = () => {
     setCurrentPage(Math.max(currentPage-1, 1))
     if (!docEl.current) return;
-    updateDocPosition();
+    updateDocPosition(scale);
     docEl.current.classList.add('min-height-canvas');
   }
   const onDocumentLoadSuccess = ({ numPages }: {numPages: number}) => {
@@ -169,7 +146,7 @@ export default function PDFDocument(props: DocumentProps) {
     elem.style.width = '100';
     elem.style.height = '100';
   }
-  const updateDocPosition = () => {
+  const updateDocPosition = (sc: number) => {
     const cont = document.getElementById('cont');
     if (!docEl.current || !cont) return;
     if (docEl.current.clientWidth < window.innerWidth) {
@@ -512,16 +489,14 @@ export default function PDFDocument(props: DocumentProps) {
 
   // Zoom
   const zoomIn = () => {
-    docEl.current?.classList.remove('min-height-canvas');
     setScale(scale + 0.05);
-    updateDocPosition();
+    updateDocPosition(scale + 0.05);
     selectActiveTool('none')
   };
   const zoomOut = () => {
-    docEl.current?.classList.remove('min-height-canvas');
     if (scale < 0.25) return; 
-    updateDocPosition();
     setScale(scale - 0.05);
+    updateDocPosition(scale - 0.05);
     selectActiveTool('none');
   };
 
