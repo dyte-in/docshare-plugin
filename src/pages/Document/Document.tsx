@@ -28,7 +28,18 @@ export default function PDFDocument(props: DocumentProps) {
   const tool = useRef<ToolbarState>('none');
   const selectedElements = useRef<Set<string>>(new Set());
   const [docEl, docElUpdate, docElRef] = CanvasRef();
-  const { annStore, setDocument, doc, currentPage, setCurrentPage, userId, setAnnStore } = useContext(MainContext);
+  const {
+    doc,
+    userId,
+    annStore,
+    followId,
+    isRecorder,
+    setDocument,
+    setAnnStore,
+    currentPage, 
+    setCurrentPage,
+   
+  } = useContext(MainContext);
 
   const [scale, setScale] = useState<number>(1);
   const [draw, setDraw] = useState<boolean>(false);
@@ -487,16 +498,74 @@ export default function PDFDocument(props: DocumentProps) {
 
   // Zoom
   const zoomIn = () => {
-    setScale(scale + 0.05);
+    selectActiveTool('none');
     updateDocPosition(scale + 0.05);
-    selectActiveTool('none')
+    syncZoom(scale + 0.05);
+    setScale(scale + 0.05);
   };
   const zoomOut = () => {
-    if (scale < 0.25) return; 
-    setScale(scale - 0.05);
-    updateDocPosition(scale - 0.05);
     selectActiveTool('none');
+    if (scale < 0.25) return; 
+    updateDocPosition(scale - 0.05);
+    syncZoom(scale - 0.05);
+    setScale(scale - 0.05);
   };
+  const syncZoom = (zoom: number) => {
+    if (followId !== userId) return;
+    plugin.emit('syncZoom', { zoom });
+  }
+  // zoom and scroll sync listeners
+  useEffect(() => {
+    if (!plugin || !isRecorder) return;
+    plugin.addListener('syncZoom', ({ zoom }) => {
+      selectActiveTool('none');
+      updateDocPosition(zoom);
+      setScale(zoom);
+    })
+    plugin.addListener('syncScroll', ({ x, y }) => {
+      const el = document.getElementById('cont');
+      if (!el) return;
+      const scrollX = x * el.scrollWidth;
+      const scrollY = y * window.innerHeight;
+      window.scrollTo({
+        top: scrollY,
+        left: window.screenLeft,
+        behavior: 'smooth',
+      });
+      el.scrollTo({
+        top: el.scrollTop,
+        left: scrollX,
+        behavior: 'smooth',
+      });
+    })
+    return () => {
+      plugin.removeListeners('syncZoom');
+      plugin.removeListeners('syncScroll');
+    }
+  }, [plugin, isRecorder])
+
+
+  // sync scroll - host
+  useEffect(() => {
+    if (!plugin || !followId || !userId || followId !== userId) return;
+    const el = document.getElementById('cont');
+    if (!el) return;
+    const scrollListener = () => {
+      const scrollObj = {
+        x: el.scrollLeft/ el.scrollWidth,
+        y: window.scrollY /window.innerHeight,
+      }
+      plugin.emit('syncScroll', scrollObj);
+    }
+    el.addEventListener("scroll", scrollListener);
+    document.addEventListener("scroll", scrollListener);
+
+    return () => {
+      el.removeEventListener('scroll', scrollListener)
+      document.addEventListener("scroll", scrollListener);
+    }
+    
+  }, [plugin, followId, userId])
 
   // Export
   // TODO: export entire document
