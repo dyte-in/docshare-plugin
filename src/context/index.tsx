@@ -10,6 +10,7 @@ const MainProvider = ({ children }: { children: any }) => {
     const [doc, updateDocument] = useState<string>();
     const [annStore, setAnnStore] = useState<DyteStore>();
     const [currentPage, updateCurrentPage] = useState<number>(0);
+    const [isRecorder, setIsRecorder] = useState<boolean>(false);
     
     const setDocument = async (url: string) => {
         if (plugin) {
@@ -50,6 +51,7 @@ const MainProvider = ({ children }: { children: any }) => {
         const userId = await dytePlugin.room.getPeer();
         setBase(id.payload.roomName);
         setUserId(userId.payload.peer.id);
+        setIsRecorder(userId.payload.isRecorder ?? userId.payload.isHidden)
 
         // subscribe to store    
         DocumentStore.subscribe('url', ({ url }) => {
@@ -77,7 +79,7 @@ const MainProvider = ({ children }: { children: any }) => {
     }, [])
 
     return (
-        <MainContext.Provider value={{ annStore, base, userId, plugin, doc, currentPage, setAnnStore, setDocument, setCurrentPage }}>
+        <MainContext.Provider value={{ isRecorder, annStore, base, userId, plugin, doc, currentPage, setAnnStore, setDocument, setCurrentPage }}>
             {children}
         </MainContext.Provider>
     )
