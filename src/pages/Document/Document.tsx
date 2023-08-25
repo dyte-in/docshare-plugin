@@ -43,8 +43,8 @@ export default function PDFDocument(props: DocumentProps) {
     if (!docEl.current) return;
 
     // add classes
-    const x = docEl.current.clientWidth;
-    const y = docEl.current.clientHeight;
+    const x = parseFloat(docEl.current.style.width.replace('px', ''));
+    const y = parseFloat(docEl.current.style.height.replace('px', ''));
     if (x === 0 && y === 0) return;
     if (!dimensions) {
       setDimensions({ x, y });
@@ -113,8 +113,8 @@ export default function PDFDocument(props: DocumentProps) {
     }
     if (x === dimensions.x && y === dimensions.y) return {xS: 1, yS: 1};
     return {
-      xS: x/dimensions.x,
-      yS: y/dimensions.y,
+      xS: x / dimensions.x,
+      yS: y / dimensions.y,
     };
   }
   const enableTracer = (x: number, y: number) => {
@@ -362,7 +362,7 @@ export default function PDFDocument(props: DocumentProps) {
       selectElement(rect);
     }
     const l = Math.min(points.xP, x)/ xS;
-    const t = Math.min(points.yP, y) /yS;
+    const t = Math.min(points.yP, y) / yS;
     const w = Math.max(points.xP, x) / xS;
     const h = Math.max(points.yP, y) / yS;
     rect.setAttribute('x', l.toString());
