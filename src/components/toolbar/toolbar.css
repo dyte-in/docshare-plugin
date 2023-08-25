@@ -61,6 +61,12 @@
     }
 }
 
+@media only screen and (max-height: 250px) {
+    .toolbar-tools {
+        @apply hidden;
+    }
+}
+
 .toolbar-tools::-webkit-scrollbar {
     @apply w-1 bg-[#E9F5FF];
 }
