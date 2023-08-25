@@ -343,8 +343,6 @@ export default function PDFDocument(props: DocumentProps) {
     svg.innerHTML = '';
     if (remote) return;
     plugin.emit('remote-erase-all');
-    const store = plugin.stores.get(annStore.name);
-    if (store) plugin.stores.delete(annStore.name);
     const AnnotationStore = plugin.stores.create(`annotation-page-${currentPage}`);
     setAnnStore(AnnotationStore)
   }
