@@ -6,16 +6,25 @@
 
 .react-pdf__Page {
     @apply border-solid border-gray-200 border-[1px];
+    overflow: hidden;
+    max-width: max-content;
+    max-height: max-content;
 }
 
 .react-pdf__Page__canvas {
     max-height: calc(var(--scale-factor) * 100vh) !important;
     max-width: calc(var(--scale-factor) * 100vw) !important;
-    height: auto !important;
-    width: auto !important;
     min-width: auto;
     min-height: auto;
     position: relative;
+}
+
+.auto-height {
+    height: auto !important;
+}
+
+.auto-width {
+    width: auto !important;
 }
 
 .annotation-board {
