@@ -186,7 +186,7 @@ export default function PDFDocument(props: DocumentProps) {
   const updateDocPosition = (sc: number) => {
     const cont = document.getElementById('cont');
     if (!docEl.current || !cont) return;
-    if (docEl.current.clientWidth < window.innerWidth) {
+    if (docEl.current.clientWidth < window.innerWidth || sc < 1) {
       cont.style.justifyContent = 'center';
     } else { 
       cont.style.justifyContent = 'start';
