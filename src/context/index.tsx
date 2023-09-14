@@ -10,6 +10,9 @@ const MainProvider = ({ children }: { children: any }) => {
     const [doc, updateDocument] = useState<string>();
     const [annStore, setAnnStore] = useState<DyteStore>();
     const [currentPage, updateCurrentPage] = useState<number>(0);
+    const [isRecorder, setIsRecorder] = useState<boolean>(false);
+    // TODO: set follow id from web-core
+    const [followId, setFollowId] = useState<string>('');
     
     const setDocument = async (url: string) => {
         if (plugin) {
@@ -39,7 +42,7 @@ const MainProvider = ({ children }: { children: any }) => {
 
     const loadPlugin = async () => {
         // initialize the SDK
-        const dytePlugin = DytePlugin.init();
+        const dytePlugin = DytePlugin.init({ ready: false });
 
         // fetch data for a store
         await dytePlugin.stores.populate('doc');
@@ -48,8 +51,10 @@ const MainProvider = ({ children }: { children: any }) => {
         // define constants used across the app
         const id = await dytePlugin.room.getID();
         const userId = await dytePlugin.room.getPeer();
+        const isRec = userId.payload.peer.isRecorder ?? userId.payload.peer.isHidden;
         setBase(id.payload.roomName);
         setUserId(userId.payload.peer.id);
+        setIsRecorder(isRec);
 
         // subscribe to store    
         DocumentStore.subscribe('url', ({ url }) => {
@@ -59,12 +64,18 @@ const MainProvider = ({ children }: { children: any }) => {
             updateCurrentPage(page);
         });
 
+        // set followId
+        dytePlugin.room.on('config', ({ payload }) => {
+            setFollowId(payload.followId)
+        });
+
         // load initial data
         const currUrl = DocumentStore.get('url');
         const currPage = DocumentStore.get('page');
         if (currUrl) updateDocument(currUrl);
         if (currPage) updateCurrentPage(currPage);
         setPlugin(dytePlugin);
+        dytePlugin.ready();
     }
 
     useEffect(() => {
@@ -77,7 +88,7 @@ const MainProvider = ({ children }: { children: any }) => {
     }, [])
 
     return (
-        <MainContext.Provider value={{ annStore, base, userId, plugin, doc, currentPage, setAnnStore, setDocument, setCurrentPage }}>
+        <MainContext.Provider value={{ followId, isRecorder, annStore, base, userId, plugin, doc, currentPage, setAnnStore, setDocument, setCurrentPage }}>
             {children}
         </MainContext.Provider>
     )

@@ -1,31 +1,30 @@
 .view-box {
-    @apply relative box-border flex flex-1 items-center justify-center;
+    @apply relative box-border flex flex-1 items-center justify-center overflow-y-hidden overflow-x-auto;
     height: 100vh;
     width: 100vw;
 }
 
 .react-pdf__Page {
-    @apply !relative object-scale-down overflow-hidden m-0; 
+    @apply border-solid border-gray-200 border-[1px];
+    overflow: hidden;
+    max-width: max-content;
+    max-height: max-content;
 }
 
 .react-pdf__Page__canvas {
-    @apply relative my-0 mx-auto !w-fit;
-}
-
-.max-height-canvas {
-    max-height: 100vh !important;
-    max-width: 100vw !important;
-}
-
-.min-height-canvas {
-    height: fit-content !important;
-}
-
-.react-pdf__Page__textContent  {
-    width: calc(var(--scale-factor)) !important ;
-    user-select: none;
-    height: calc(var(--scale-factor)) !important ;
+    max-height: calc(var(--scale-factor) * 100vh) !important;
+    max-width: calc(var(--scale-factor) * 100vw) !important;
+    min-width: auto;
+    min-height: auto;
     position: relative;
+}
+
+.auto-height {
+    height: auto !important;
+}
+
+.auto-width {
+    width: auto !important;
 }
 
 .annotation-board {
@@ -39,7 +38,7 @@
 }
 
 #svg {
-    @apply w-full h-full absolute z-20 bg-none top-0 left-0 border-solid border-[1px] border-zinc-200 select-none;
+    @apply w-full h-full absolute z-20 bg-none top-0 left-0 select-none;
 }
 
 .active-cursor {

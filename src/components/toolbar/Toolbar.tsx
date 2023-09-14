@@ -2,7 +2,8 @@ import './toolbar.css';
 import { Icon, Tooltip } from '..';
 import { ToolbarState } from '../../utils/types';
 import { colors, tools } from '../../utils/contants';
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
+import { MainContext } from '../../context';
 
 
 interface ToolbarRightProps {
@@ -34,6 +35,7 @@ const ToolbarRight = (props: ToolbarRightProps) => {
     setActiveColor,
     selectActiveTool,
   } = props;
+  const { isRecorder } = useContext(MainContext);
 
   useEffect(() => {
     window.onclick = (e: any) => {
@@ -77,24 +79,28 @@ const ToolbarRight = (props: ToolbarRightProps) => {
         <Tooltip label="Dismiss" align='bottom-left'>
         <Icon icon="dismiss" className="back-icon" onClick={onBack} />
         </Tooltip>
-      <div className="toolbar-tools" id="toolbar">
         {
-          tools.map(({icon, tool, label }) => (
-            <Tooltip label={label}>
-            <Icon key={tool} icon={icon} onClick={() => selectActiveTool(tool)} className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
-            </Tooltip>
-          ))
+          !isRecorder && (
+            <div className="toolbar-tools" id="toolbar">
+              {
+                tools.map(({icon, tool, label }, index) => (
+                  <Tooltip key={index} label={label}>
+                  <Icon key={tool} icon={icon} onClick={() => selectActiveTool(tool)} className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
+                  </Tooltip>
+                ))
+              }
+              <div id="color" className={`color ${activeColor}`}></div>
+              <div ref={ref} className="color-selector">
+                {colors.map((color, index) => (
+                    <div
+                      onClick={() => setActiveColor(color)}
+                      key={index}
+                      className={`color ${color} ${color === activeColor ? 'active-color' : ''}`}></div>
+                ))}
+              </div>
+            </div>
+          )
         }
-        <div id="color" className={`color ${activeColor}`}></div>
-        <div ref={ref} className="color-selector">
-          {colors.map((color, index) => (
-              <div
-                onClick={() => setActiveColor(color)}
-                key={index}
-                className={`color ${color} ${color === activeColor ? 'active-color' : ''}`}></div>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

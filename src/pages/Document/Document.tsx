@@ -28,44 +28,46 @@ export default function PDFDocument(props: DocumentProps) {
   const tool = useRef<ToolbarState>('none');
   const selectedElements = useRef<Set<string>>(new Set());
   const [docEl, docElUpdate, docElRef] = CanvasRef();
-  const { annStore, setDocument, doc, currentPage, setCurrentPage, userId, setAnnStore } = useContext(MainContext);
+  const {
+    doc,
+    userId,
+    annStore,
+    followId,
+    isRecorder,
+    setDocument,
+    setAnnStore,
+    currentPage, 
+    setCurrentPage,
+   
+  } = useContext(MainContext);
 
   const [scale, setScale] = useState<number>(1);
   const [draw, setDraw] = useState<boolean>(false);
   const [pageCount, setPageCount] = useState<number>(0);
-  const [activeColor, setActiveColor] = useState<string>('black');
+  const [activeColor, setActiveColor] = useState<string>('purple');
   const [activeTool, setActiveTool] = useState<ToolbarState>('none');
   const [dimensions, setDimensions] = useState<{x: number; y: number}>();
   const [points, setPoints] = useState<CursorPoints>({xP: -1, xC: -1, yP: -1, yC: -1});
 
-  // initial document load
+  // handle resize
+  useEffect(() => {
+    let winX = window.innerWidth;
+    let winY = window.innerHeight;
+
+    window.onresize = () => {
+      if (winX < window.innerWidth || winY < window.innerHeight) {
+        setDocumentDimensions();
+      }
+      winX = window.innerWidth;
+      winY = window.innerHeight;
+    }
+  }, [docElUpdate, dimensions])
+
+  // on initial document load and scale change
   useEffect(() => {
     if (!docEl.current) return;
-
-    // add classes
-    const x = docEl.current.clientWidth;
-    const y = docEl.current.clientHeight;
-    if (x === 0 && y === 0) return;
-    if (!dimensions) {
-      setDimensions({ x, y });
-    }
-
-    // add styles
-    if (scale > 1) {
-      docEl.current?.classList.remove('min-height-canvas');
-    } else {
-      docEl.current.classList.add('max-height-canvas');
-    }
-    
-
-    // reset scale
-    window.onresize = () => {
-      setScale(1);
-      if (!docEl.current) return;
-      updateDocPosition();
-      docEl.current.classList.add('min-height-canvas');
-    }
-  }, [docElUpdate])
+    setDocumentDimensions();
+  }, [docElUpdate, scale])
 
   // tools
   useEffect(() => {
@@ -75,24 +77,37 @@ export default function PDFDocument(props: DocumentProps) {
     if (activeTool === 'export-tool') exportPage();
   }, [activeTool, draw])
 
-  // adjust styles according to scale
-  useEffect(() => {
-    if (scale <= 1) {
-      docEl.current?.classList.add('max-height-canvas');
-    }
-  }, [scale])
-
   // Helper Methods
+  const setDocumentDimensions = () => {
+    if (!docEl.current) return;
+    // set dimensions
+    const initX = parseFloat(docEl.current.style.width.replace('px', ''));
+    const initY = parseFloat(docEl.current.style.height.replace('px', ''));
+    const orientation =  initX < initY ? 'potrait' : 'landscape';
+    docEl.current.style.width = `${window.innerWidth * scale}px`;
+    docEl.current.style.height = `${(initY * window.innerWidth * scale)/initX}px`;
+    // add classes
+    if (orientation === 'landscape') {
+      docEl.current.classList.remove('auto-width');
+      docEl.current.classList.add('auto-height');
+    } else {
+      docEl.current.classList.remove('auto-height');
+      docEl.current.classList.add('auto-width');
+    }
+    if (!dimensions) {
+      setDimensions({ x: initX, y: initY });
+    }
+  }
   const handleNext = () => {
     setCurrentPage(Math.min(currentPage+1, pageCount))
     if (!docEl.current) return;
-    updateDocPosition();
+    updateDocPosition(scale);
     docEl.current.classList.add('min-height-canvas');
   }
   const handlePrev = () => {
     setCurrentPage(Math.max(currentPage-1, 1))
     if (!docEl.current) return;
-    updateDocPosition();
+    updateDocPosition(scale);
     docEl.current.classList.add('min-height-canvas');
   }
   const onDocumentLoadSuccess = ({ numPages }: {numPages: number}) => {
@@ -134,10 +149,9 @@ export default function PDFDocument(props: DocumentProps) {
       setDimensions({x, y});
       return {xS: 1, yS: 1};
     }
-    if (x === dimensions.x && y === dimensions.y) return {xS: 1, yS: 1};
     return {
-      xS: x/dimensions.x,
-      yS: y/dimensions.y,
+      xS: x / dimensions.x,
+      yS: y / dimensions.y,
     };
   }
   const enableTracer = (x: number, y: number) => {
@@ -169,10 +183,10 @@ export default function PDFDocument(props: DocumentProps) {
     elem.style.width = '100';
     elem.style.height = '100';
   }
-  const updateDocPosition = () => {
+  const updateDocPosition = (sc: number) => {
     const cont = document.getElementById('cont');
     if (!docEl.current || !cont) return;
-    if (docEl.current.clientWidth < window.innerWidth) {
+    if (docEl.current.clientWidth < window.innerWidth || sc < 1) {
       cont.style.justifyContent = 'center';
     } else { 
       cont.style.justifyContent = 'start';
@@ -366,8 +380,6 @@ export default function PDFDocument(props: DocumentProps) {
     svg.innerHTML = '';
     if (remote) return;
     plugin.emit('remote-erase-all');
-    const store = plugin.stores.get(annStore.name);
-    if (store) plugin.stores.delete(annStore.name);
     const AnnotationStore = plugin.stores.create(`annotation-page-${currentPage}`);
     setAnnStore(AnnotationStore)
   }
@@ -385,7 +397,7 @@ export default function PDFDocument(props: DocumentProps) {
       selectElement(rect);
     }
     const l = Math.min(points.xP, x)/ xS;
-    const t = Math.min(points.yP, y) /yS;
+    const t = Math.min(points.yP, y) / yS;
     const w = Math.max(points.xP, x) / xS;
     const h = Math.max(points.yP, y) / yS;
     rect.setAttribute('x', l.toString());
@@ -512,18 +524,74 @@ export default function PDFDocument(props: DocumentProps) {
 
   // Zoom
   const zoomIn = () => {
-    docEl.current?.classList.remove('min-height-canvas');
+    selectActiveTool('none');
+    updateDocPosition(scale + 0.05);
+    syncZoom(scale + 0.05);
     setScale(scale + 0.05);
-    updateDocPosition();
-    selectActiveTool('none')
   };
   const zoomOut = () => {
-    docEl.current?.classList.remove('min-height-canvas');
-    if (scale < 0.25) return; 
-    updateDocPosition();
-    setScale(scale - 0.05);
     selectActiveTool('none');
+    if (scale < 0.25) return; 
+    updateDocPosition(scale - 0.05);
+    syncZoom(scale - 0.05);
+    setScale(scale - 0.05);
   };
+  const syncZoom = (zoom: number) => {
+    if (followId !== userId) return;
+    plugin.emit('syncZoom', { zoom });
+  }
+  // zoom and scroll sync listeners
+  useEffect(() => {
+    if (!plugin || !isRecorder) return;
+    plugin.addListener('syncZoom', ({ zoom }) => {
+      selectActiveTool('none');
+      updateDocPosition(zoom);
+      setScale(zoom);
+    })
+    plugin.addListener('syncScroll', ({ x, y }) => {
+      const el = document.getElementById('cont');
+      if (!el) return;
+      const scrollX = x * el.scrollWidth;
+      const scrollY = y * window.innerHeight;
+      window.scrollTo({
+        top: scrollY,
+        left: window.screenLeft,
+        behavior: 'smooth',
+      });
+      el.scrollTo({
+        top: el.scrollTop,
+        left: scrollX,
+        behavior: 'smooth',
+      });
+    })
+    return () => {
+      plugin.removeListeners('syncZoom');
+      plugin.removeListeners('syncScroll');
+    }
+  }, [plugin, isRecorder])
+
+
+  // sync scroll - host
+  useEffect(() => {
+    if (!plugin || !followId || !userId || followId !== userId) return;
+    const el = document.getElementById('cont');
+    if (!el) return;
+    const scrollListener = () => {
+      const scrollObj = {
+        x: el.scrollLeft/ el.scrollWidth,
+        y: window.scrollY /window.innerHeight,
+      }
+      plugin.emit('syncScroll', scrollObj);
+    }
+    el.addEventListener("scroll", scrollListener);
+    document.addEventListener("scroll", scrollListener);
+
+    return () => {
+      el.removeEventListener('scroll', scrollListener)
+      document.addEventListener("scroll", scrollListener);
+    }
+    
+  }, [plugin, followId, userId])
 
   // Export
   // TODO: export entire document
