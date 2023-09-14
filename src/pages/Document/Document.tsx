@@ -44,23 +44,30 @@ export default function PDFDocument(props: DocumentProps) {
   const [scale, setScale] = useState<number>(1);
   const [draw, setDraw] = useState<boolean>(false);
   const [pageCount, setPageCount] = useState<number>(0);
-  const [activeColor, setActiveColor] = useState<string>('black');
+  const [activeColor, setActiveColor] = useState<string>('purple');
   const [activeTool, setActiveTool] = useState<ToolbarState>('none');
   const [dimensions, setDimensions] = useState<{x: number; y: number}>();
   const [points, setPoints] = useState<CursorPoints>({xP: -1, xC: -1, yP: -1, yC: -1});
 
-  // initial document load
+  // handle resize
+  useEffect(() => {
+    let winX = window.innerWidth;
+    let winY = window.innerHeight;
+
+    window.onresize = () => {
+      if (winX < window.innerWidth || winY < window.innerHeight) {
+        setDocumentDimensions();
+      }
+      winX = window.innerWidth;
+      winY = window.innerHeight;
+    }
+  }, [docElUpdate, dimensions])
+
+  // on initial document load and scale change
   useEffect(() => {
     if (!docEl.current) return;
-
-    // add classes
-    const x = parseFloat(docEl.current.style.width.replace('px', ''));
-    const y = parseFloat(docEl.current.style.height.replace('px', ''));
-    if (x === 0 && y === 0) return;
-    if (!dimensions) {
-      setDimensions({ x, y });
-    }
-  }, [docElUpdate])
+    setDocumentDimensions();
+  }, [docElUpdate, scale])
 
   // tools
   useEffect(() => {
@@ -71,6 +78,26 @@ export default function PDFDocument(props: DocumentProps) {
   }, [activeTool, draw])
 
   // Helper Methods
+  const setDocumentDimensions = () => {
+    if (!docEl.current) return;
+    // set dimensions
+    const initX = parseFloat(docEl.current.style.width.replace('px', ''));
+    const initY = parseFloat(docEl.current.style.height.replace('px', ''));
+    const orientation =  initX < initY ? 'potrait' : 'landscape';
+    docEl.current.style.width = `${window.innerWidth * scale}px`;
+    docEl.current.style.height = `${(initY * window.innerWidth * scale)/initX}px`;
+    // add classes
+    if (orientation === 'landscape') {
+      docEl.current.classList.remove('auto-width');
+      docEl.current.classList.add('auto-height');
+    } else {
+      docEl.current.classList.remove('auto-height');
+      docEl.current.classList.add('auto-width');
+    }
+    if (!dimensions) {
+      setDimensions({ x: initX, y: initY });
+    }
+  }
   const handleNext = () => {
     setCurrentPage(Math.min(currentPage+1, pageCount))
     if (!docEl.current) return;
@@ -122,7 +149,6 @@ export default function PDFDocument(props: DocumentProps) {
       setDimensions({x, y});
       return {xS: 1, yS: 1};
     }
-    if (x === dimensions.x && y === dimensions.y) return {xS: 1, yS: 1};
     return {
       xS: x / dimensions.x,
       yS: y / dimensions.y,
@@ -160,7 +186,7 @@ export default function PDFDocument(props: DocumentProps) {
   const updateDocPosition = (sc: number) => {
     const cont = document.getElementById('cont');
     if (!docEl.current || !cont) return;
-    if (docEl.current.clientWidth < window.innerWidth) {
+    if (docEl.current.clientWidth < window.innerWidth || sc < 1) {
       cont.style.justifyContent = 'center';
     } else { 
       cont.style.justifyContent = 'start';
