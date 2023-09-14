@@ -42,7 +42,7 @@ const MainProvider = ({ children }: { children: any }) => {
 
     const loadPlugin = async () => {
         // initialize the SDK
-        const dytePlugin = DytePlugin.init();
+        const dytePlugin = DytePlugin.init({ ready: false });
 
         // fetch data for a store
         await dytePlugin.stores.populate('doc');
@@ -75,6 +75,7 @@ const MainProvider = ({ children }: { children: any }) => {
         if (currUrl) updateDocument(currUrl);
         if (currPage) updateCurrentPage(currPage);
         setPlugin(dytePlugin);
+        dytePlugin.ready();
     }
 
     useEffect(() => {
