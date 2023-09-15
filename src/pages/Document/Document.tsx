@@ -83,7 +83,7 @@ export default function PDFDocument(props: DocumentProps) {
     // set dimensions
     const initX = parseFloat(docEl.current.style.width.replace('px', ''));
     const initY = parseFloat(docEl.current.style.height.replace('px', ''));
-    const orientation =  initX < initY ? 'potrait' : 'landscape';
+    const orientation =  initX <= initY ? 'potrait' : 'landscape';
     docEl.current.style.width = `${window.innerWidth * scale}px`;
     docEl.current.style.height = `${(initY * window.innerWidth * scale)/initX}px`;
     // add classes
