@@ -1,5 +1,6 @@
 import './icon.css';
 import iconPack from '../../icons/iconPack.json'
+import { useEffect, useState } from 'react';
 
 interface Props {
     icon: keyof typeof iconPack;
@@ -8,11 +9,21 @@ interface Props {
 }
 
 const Icon = (props: Props) => {
-    const { icon, className, onClick } = props;
+  const { icon, className, onClick } = props;
+  const [imgSrc, setImgSrc] = useState<string>('');
+
+  useEffect(() => {
+    const cont = document.getElementById('icon-cont');
+    if (!cont) return;
+    const color = window.getComputedStyle(cont).color;
+    setImgSrc(`data:image/svg+xml;utf8,${encodeURIComponent(iconPack[icon].replaceAll('currentColor', color))}`)
+
+  }, []);
 
   return (
-    <div onClick={onClick} className={`icon-wrapper ${className}`} dangerouslySetInnerHTML={{
-      __html: iconPack[icon]}}></div>
+    <div id='icon-cont' onClick={onClick} className={`icon-wrapper ${className}`}>
+      <img src={imgSrc} />
+    </div>
   )
 }
 

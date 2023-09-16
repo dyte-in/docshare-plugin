@@ -1,7 +1,9 @@
 .icon-wrapper {
-    @apply flex items-center justify-center h-full w-full outline-none;
+    @apply flex items-center justify-center h-full w-full outline-none text-inherit;
+    fill: inherit;
+    color: inherit;
 }
 
-svg {
+.icon-wrapper img {
     @apply h-2/3 w-2/3 outline-none bg-none flex self-center;
 }
