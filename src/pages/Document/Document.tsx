@@ -4,14 +4,13 @@ import { pdfjs, Document, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useContext, useEffect, useRef, useState } from 'react';
-import {ToolbarRight, ToolbarLeft } from '../../components';
+import {ToolbarRight, ToolbarLeft, ToolbarTop } from '../../components';
 import CanvasRef from '../../hooks/StatefulRef';
 import { color, throttle } from '../../utils/helpers';
 import { CursorPoints, ToolbarState } from '../../utils/types';
 import { options } from '../../utils/contants';
 import { MainContext } from '../../context';
 import DytePlugin from '@dytesdk/plugin-sdk';
-import { ToolbarTop } from '../../components/toolbar/Toolbar';
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/legacy/build/pdf.worker.min.js',
   import.meta.url,
@@ -83,7 +82,7 @@ export default function PDFDocument(props: DocumentProps) {
     // set dimensions
     const initX = parseFloat(docEl.current.style.width.replace('px', ''));
     const initY = parseFloat(docEl.current.style.height.replace('px', ''));
-    const orientation =  initX < initY ? 'potrait' : 'landscape';
+    const orientation =  initX <= initY ? 'potrait' : 'landscape';
     docEl.current.style.width = `${window.innerWidth * scale}px`;
     docEl.current.style.height = `${(initY * window.innerWidth * scale)/initX}px`;
     // add classes

@@ -64,8 +64,14 @@ const MainProvider = ({ children }: { children: any }) => {
         });
 
         // set followId
-        dytePlugin.room.on('config', ({ payload }) => {
-            setFollowId(payload.followId)
+        dytePlugin.room.on('config', async ({ payload }) => {
+            const id = payload.followId; 
+            const url = payload.document;
+            if (id) setFollowId(id);
+            if (url) {
+                updateDocument(url);
+                await dytePlugin.stores.get('doc').set('url', url);
+            }
         });
 
         // load initial data
