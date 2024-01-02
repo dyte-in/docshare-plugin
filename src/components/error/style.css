@@ -1,0 +1,9 @@
+.error-container {
+    @apply flex absolute top-0 left-0 bg-white bg-opacity-40 w-full h-full flex-col items-start justify-end;
+}
+.error-modal {
+    @apply bg-white p-2 px-4 rounded-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-row items-center justify-center text-sm text-red-500 gap-2 m-4;
+}
+.error-icon {
+    @apply !h-6 !w-6 cursor-pointer min-w-[1.5rem];
+}

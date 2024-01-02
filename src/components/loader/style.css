@@ -1,0 +1,6 @@
+.loader-container {
+    @apply h-2 rounded-full bg-[#E0EBF4] w-44 overflow-hidden;
+}
+.loader-indicator {
+    @apply h-full bg-blue-500 rounded-full;
+}

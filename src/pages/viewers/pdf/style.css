@@ -1,0 +1,70 @@
+.pdf-viewer-container {
+    @apply relative box-border flex flex-1 items-center justify-center overflow-auto bg-[#F2F9FF];
+    height: 100vh;
+    width: 100vw;
+}
+
+.react-pdf__Page {
+    @apply border-solid border-gray-200 border-[1px];
+    max-width: fit-content;
+    max-height: fit-content
+}
+
+.react-pdf__Page__canvas {
+    max-height: calc(var(--scale-factor) * 100vh) !important;
+    max-width: calc(var(--scale-factor) * 100vw) !important;
+    min-width: auto;
+    min-height: auto;
+    position: relative;
+    padding: 0;
+}
+.react-pdf__Page__textContent {
+    max-height: 100% !important;
+    max-width: 100% !important;
+    min-width: auto;
+    min-height: auto;
+    position: relative;
+    margin: 0;
+}
+
+.auto-height {
+    height: auto !important;
+}
+
+.auto-width {
+    width: auto !important;
+}
+
+
+#svg {
+    @apply w-full h-full absolute z-20 bg-none top-0 left-0 select-none;
+}
+
+.active-cursor {
+    @apply cursor-crosshair;
+}
+
+#svg rect:focus {
+    @apply bg-blue-500/40;
+}
+
+#tracer-element {
+    @apply absolute h-10 w-10 border-solid border-2 border-gray-200 top-0 left-0 rounded-md hidden;
+}
+
+
+#text-tool {
+    @apply border-dashed border-2 border-gray-500 absolute rounded-sm hidden bg-none box-border z-50 resize-none font-open-sans text-sm;
+    padding: 5px;
+}
+
+#text-tool::placeholder {
+    font-size: 12px;
+    @apply text-gray-400;
+}
+#text-tool::-webkit-scrollbar {
+   width: 0;
+}
+#text-tool:focus, #text-tool:hover, #text-tool:active  {
+    @apply !border-dashed border-2 border-blue-500 absolute rounded-sm outline-none;
+}

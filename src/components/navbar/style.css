@@ -1,0 +1,19 @@
+.navbar {
+    @apply fixed bottom-2 left-[50%] flex flex-row items-center justify-center;
+    @apply py-0.5 px-2 bg-white rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)];
+    @apply border-solid border-gray-200 border-[1px] text-xs text-neutral-400;
+    z-index: 999999;
+    transform: translateX(-50%);
+}
+.navbar-icon {
+    @apply h-8 w-8 cursor-pointer;
+}
+.nav-break {
+    @apply mx-2 h-4 w-[1px] bg-neutral-300 rounded-lg;
+}
+.navbar-icon-2 {
+    @apply h-6 w-6 cursor-pointer;
+}
+.nav-text {
+    @apply mx-1;
+}

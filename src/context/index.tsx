@@ -1,35 +1,41 @@
 import DytePlugin, { DyteStore } from '@dytesdk/plugin-sdk';
 import React, { useEffect, useState } from 'react'
+import { Extension, LocalData, Tools, colors } from '../utils/constants';
+import { urlValidator } from '../utils/files';
 
 const MainContext = React.createContext<any>({});
 
 const MainProvider = ({ children }: { children: any }) => {
-    const [base, setBase] = useState<string>('');
-    const [userId, setUserId] = useState<string>('');
+    const [user, setUser] = useState<any>();
+    const [base, setBase] = useState<string>();
+    const [token, setToken] = useState<string>();
+    const [page, updatePage] = useState<number>(1);
+    const [hostId, setHostId] = useState<string>('');
     const [plugin, setPlugin] = useState<DytePlugin>();
-    const [doc, updateDocument] = useState<string>();
+    const [activeTool, setActiveTool] = useState<Tools>('cursor');
+    const [recorder, setRecorder] = useState<boolean>(false);
     const [annStore, setAnnStore] = useState<DyteStore>();
-    const [currentPage, updateCurrentPage] = useState<number>(0);
-    const [isRecorder, setIsRecorder] = useState<boolean>(false);
-    const [followId, setFollowId] = useState<string>('');
-    
-    const setDocument = async (url: string) => {
-        if (plugin) {
-            await plugin.stores.get('doc').set('url', url);
-            updateDocument(url)
-        }
+    const [doc, updateDoc] = useState<{url: String, type: Extension}>();
+    const [activeColor, setActiveColor] = useState<typeof colors[number]>('purple');
+
+    const setData = async (val: Pick<LocalData, 'url' | 'type'>) => {
+        if (!plugin) return;
+        const DocumentStore = plugin.stores.get('doc');
+        await DocumentStore.set('document', val);
+        updateDoc(val);
     }
-    const setCurrentPage = async (page: number) => {
-        if (plugin) {
-            updateCurrentPage(page);
-            await plugin.stores.get('doc').set('page', page);
-        }
-    };
+
+    const setPage = async (page: number) => {
+        if (!plugin) return;
+        const DocumentStore = plugin.stores.get('doc');
+        await DocumentStore.set('page', page);
+        updatePage(page);
+    }
 
     useEffect(() => {
-        if (!currentPage || !plugin) return;
-        loadAnnotation(currentPage, plugin);
-    }, [currentPage, plugin])
+        if (!page || !plugin) return;
+        loadAnnotation(page, plugin);
+    }, [page, plugin])
 
     // populate annotation store
     const loadAnnotation = async (page: number, dytePlugin: DytePlugin) => {
@@ -40,63 +46,98 @@ const MainProvider = ({ children }: { children: any }) => {
     };
 
     const loadPlugin = async () => {
-        // initialize the SDK
-        const dytePlugin = DytePlugin.init({ ready: false });
+        const dytePlugin =  DytePlugin.init({ ready: false });
+        const { payload: { roomName }} = await dytePlugin.room.getID();
+        const { payload: { enabledBy }} = await dytePlugin.enabledBy();
+        const { payload: { peer }} = await dytePlugin.room.getPeer();
+        
+        // fetch & store metadata for app
+        setUser(peer);
+        setBase(roomName);
+        setHostId(enabledBy);    
+        setToken(dytePlugin.authToken);
+        
+        const isRecorder = peer.isRecorder || peer.isHidden;
+        setRecorder(isRecorder);
 
-        // fetch data for a store
+        // populate store
         await dytePlugin.stores.populate('doc');
         const DocumentStore = dytePlugin.stores.create('doc');
 
-        // define constants used across the app
-        const id = await dytePlugin.room.getID();
-        const userId = await dytePlugin.room.getPeer();
-        const isRec = userId.payload.peer.isRecorder || userId.payload.peer.isHidden;
-        setBase(id.payload.roomName);
-        setUserId(userId.payload.peer.userId);
-        setIsRecorder(isRec);
+        // set inital store data
+        const currentDoc = DocumentStore.get('document');
+        const currentPage = DocumentStore.get('page');
+        if (currentDoc?.url) updateDoc(currentDoc);
+        if (currentPage) updatePage(currentPage);
 
-        // subscribe to store    
-        DocumentStore.subscribe('url', ({ url }) => {
-            updateDocument(url);
-        });
-        DocumentStore.subscribe('page', ({ page }) => {
-            updateCurrentPage(page);
-        });
 
-        // set followId
-        dytePlugin.room.on('config', async ({ payload }) => {
-            const id = payload.followId; 
-            const url = payload.document;
-            if (id) setFollowId(id);
-            if (url) {
-                updateDocument(url);
-                await dytePlugin.stores.get('doc').set('url', url);
+        // subscribe to data change
+        DocumentStore.subscribe('document', ({document}) => {
+            if (!document.url) {
+                updateDoc(undefined);
+                setAnnStore(undefined);
             }
+            else updateDoc(document);
+        });
+        DocumentStore.subscribe('page', ({page}) => {
+            updatePage(page);
         });
 
-        // load initial data
-        const currUrl = DocumentStore.get('url');
-        const currPage = DocumentStore.get('page');
-        if (currUrl) updateDocument(currUrl);
-        if (currPage) updateCurrentPage(currPage);
-        setPlugin(dytePlugin);
+        // populate from config
+        dytePlugin.room.on('config', async ({ followId, document }: { followId: string, document: string }) => {
+            setHostId(followId);
+            const data = await urlValidator(document);
+            // update plugin store if you are the host
+            if (followId === peer.id || enabledBy === peer.id) {
+                setData({
+                    type: data.type,
+                    url: data.url,
+                })
+                return;
+            }
+            updateDoc({
+                type: data.type,
+                url: data.url,
+            });
+        });
+
         dytePlugin.ready();
+        setPlugin(dytePlugin);
     }
 
     useEffect(() => {
         loadPlugin();
-        return () => {
-            if (!plugin) return;
-            plugin.removeListeners('remote-erase-all');
-            plugin.removeListeners('remote-erase');
-        }
     }, [])
 
     return (
-        <MainContext.Provider value={{ followId, isRecorder, annStore, base, userId, plugin, doc, currentPage, setAnnStore, setDocument, setCurrentPage }}>
+        <MainContext.Provider value={{
+            doc,
+            base,
+            user,
+            page,
+            token,
+            plugin,
+            hostId,
+            recorder,
+            annStore,
+            activeTool,
+            activeColor,
+            setData,
+            setPage,
+            setAnnStore,
+            setActiveTool,
+            setActiveColor,
+        }}>
             {children}
         </MainContext.Provider>
     )
 }
 
 export { MainContext, MainProvider } 
+
+// TODO: handle plugin events for:
+// 2. page changes
+// 4. annotations
+// 5. deselecting docs
+// 6. annotations
+// 7. sync zoom and scroll for recorder/livestreamer/hidden-peers

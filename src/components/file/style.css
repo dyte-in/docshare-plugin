@@ -1,0 +1,21 @@
+.file {
+    @apply flex flex-row items-center justify-start w-full;
+}
+.file-icon {
+    @apply !h-12 !w-12 m-0 p-0 -ml-3;
+}
+.file-info {
+    @apply flex flex-col;
+}
+.file-label {
+    @apply text-neutral-800 text-sm;
+}
+.file-size {
+    @apply text-neutral-500 text-xs;
+}
+.file-grow {
+    @apply flex-grow flex flex-row items-center justify-start cursor-pointer;
+}
+.file-cta-icon {
+    @apply !h-9 !w-9 m-0 p-0 cursor-pointer;
+}

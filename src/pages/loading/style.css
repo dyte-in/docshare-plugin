@@ -1,0 +1,7 @@
+.loading-screen {
+    @apply flex flex-col items-center justify-center;
+}
+
+.loading-logo {
+    @apply h-10 w-auto;
+}

@@ -1,25 +1,16 @@
-import { useContext } from 'react'
 import './index.css'
-import { Document, Dashboard } from './pages'
-import logo from '../src/assets/document.png'
+import { useContext } from 'react'
 import { MainContext } from './context'
+import Loading from './pages/loading';
+import Dashboard from './pages/dashboard';
+import DocViewer from './pages/viewers';
 
 const App = () => {
-  const { doc, plugin } = useContext(MainContext);
+  const { plugin, doc } = useContext(MainContext);
 
-  return (
-    <div className='container'>
-      {
-        plugin ? 
-          doc 
-            ? <Document plugin={plugin} /> 
-            : <Dashboard />
-          : <div className="loading-page">
-              <img src={logo} />
-            </div>
-      }
-    </div>
-  )
+  if (!plugin) return <Loading />;
+  if (doc) return <DocViewer />;
+  return <Dashboard />;
 }
 
 export default App

@@ -1,0 +1,29 @@
+.button {
+    @apply flex flex-row items-center min-w-fit text-xs cursor-pointer;
+}
+.button-icon {
+    @apply h-7 w-7;
+}
+.button-disabled {
+    @apply opacity-70;
+}
+.primary {
+    @apply bg-black text-white rounded-md px-2 h-9;
+}
+
+.secondary {
+    @apply bg-white text-black rounded-md px-2 h-9 border-solid border-[1.5px] border-neutral-300;
+}
+
+.icon-sm {
+    @apply hidden;
+}
+
+@media only screen and (max-width: 800px) {
+    .label {
+        @apply hidden;
+    }
+    .icon-sm {
+        @apply flex;
+    }
+}

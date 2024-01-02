@@ -1,48 +1,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600&display=swap');
 * {
-    box-sizing: border-box;
-    touch-action: none !important;
-  }
+  box-sizing: border-box;
+  touch-action: none !important;
+  -ms-touch-action: none;
+  @apply p-0 m-0;
+  @apply font-sans;
+}
 
 body {
-  @apply p-0 m-0 max-w-full font-open-sans w-full min-h-full bg-white;
+  width: 100vw;
+  height: 100vh;
+}
+
+.grid-bg {
+  @apply p-0 m-0 max-w-full font-open-sans w-full min-h-full bg-white flex flex-col;
   background-size: 3rem 3rem;
   background-image:
   linear-gradient(to right, theme('colors.bg.400') 0.063rem, transparent 0.063rem),
   linear-gradient(to bottom, theme('colors.bg.400') 0.063rem, transparent 0.063rem);
-  -ms-touch-action: none;
+  height: 100vh;
+  width: 100vw;
 }
 
-.row {
-  box-sizing: border-box;
-  @apply flex flex-row items-center justify-start w-full;
-}
-
-.sticky-pos {
-  @apply sticky top-0;
-}
-
-.col {
-  box-sizing: border-box;
-  @apply flex flex-col items-start justify-start w-full flex-grow;
-}
-
-.container {
-  @apply w-full flex flex-col;
-  min-height: 100vh;
+.fade-bg {
+  @apply w-full h-full;
   box-sizing: border-box;
   background: radial-gradient(circle, theme('colors.fade.100') 0%, theme('colors.fade.200') 100%);
-}
-
-button {
-  @apply cursor-pointer;
-}
-
-.loading-page {
-  @apply flex items-center justify-center w-full;
-  height: 100vh;
-}
-
-.loading-page img {
-  @apply h-12;
-}
+  }

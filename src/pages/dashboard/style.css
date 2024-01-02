@@ -1,0 +1,87 @@
+.dashboard {
+    @apply flex flex-col p-4 items-center justify-start;
+    h3 {
+        @apply text-center font-medium text-[#323232];
+    }
+}
+.dashboard-header {
+    @apply flex flex-row items-center py-2 px-4 rounded-md bg-[#D9E6F1] mb-4 shadow-[rgba(0,_0,_0,_0.25)_0px_25px_50px_-12px] w-[80%];
+}
+.dashboard-logo, .dashboard-logo-min {
+    @apply h-6 my-1.5;
+}
+
+.dashboard-logo-min {
+    @apply hidden;
+}
+.dashboard-header-buttons {
+    @apply flex flex-row items-center gap-1.5;
+}
+.dashboard-dropbox {
+    @apply flex flex-col items-center justify-center p-4 rounded-md bg-[#E0EBF4] mb-4 w-[80%] !text-[#848484];
+    p {
+        @apply font-normal text-sm;
+    }
+    a {
+        @apply text-blue-600 cursor-pointer;
+    }
+}
+.dashboard-dropbox-disabled {
+    @apply opacity-70;
+}
+.dashboard-dropbox-icon {
+    @apply !h-14 !w-14;
+}
+.dashboard-dropbox-text {
+    @apply mb-2 text-neutral-800;
+}
+.dashboard-list {
+    @apply flex flex-col items-start justify-start w-[80%] overflow-y-auto;
+    h3 {
+        @apply w-fit text-base mt-4 mb-2;
+    }
+    p {
+        @apply text-center w-full mt-2 text-neutral-600 text-sm;
+    }
+}
+
+.dashboard-list::-webkit-scrollbar {
+    @apply bg-slate-200 w-2 rounded-full;
+}
+.dashboard-list::-webkit-scrollbar-thumb {
+    @apply bg-[#a1aeb9] w-2 rounded-full;
+}
+
+@media only screen and (max-width: 800px) {
+    .dashboard-header {
+        @apply !w-[90%];
+    }
+    .dashboard-dropbox {
+        @apply !w-[90%];
+    }
+    .dashboard-list  {
+        @apply !w-[90%];
+    }
+}
+@media only screen and (max-width: 600px) {
+    .dashboard-header {
+        @apply !w-[100%];
+    }
+    .dashboard-dropbox {
+        @apply !w-[100%];
+    }
+    .dashboard-list  {
+        @apply !w-[100%];
+    }
+    .dashboard-logo-min {
+        @apply flex;
+    }
+    .dashboard-logo {
+        @apply hidden;
+    }
+    .dashboard-list {
+        p {
+            @apply m-0;
+        }
+    }
+}

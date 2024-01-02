@@ -1,0 +1,47 @@
+.toolbar {
+    @apply fixed top-2 right-2 flex flex-col items-center;
+    @apply p-1 bg-white rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)];
+    @apply border-solid border-gray-200 border-[1px] text-xs text-neutral-400 cursor-pointer gap-1 overflow-x-visible;
+    max-height: 80%;
+    z-index: 999999;
+}
+.toolbar-icon {
+    @apply h-7 w-7 cursor-pointer;
+}
+.toolbar-tools::-webkit-scrollbar {
+    @apply w-1 bg-[#E9F5FF];
+}
+.toolbar-tools::-webkit-scrollbar-thumb {
+    @apply w-1 bg-slate-400 rounded-md;
+}
+
+.toolbar .pink { @apply bg-[#f1cbff] }
+.toolbar .red { @apply bg-red-400 }
+.toolbar .orange { @apply bg-[#FFA071] }
+.toolbar .blue { @apply bg-[#c8e5ff] }
+.toolbar .yellow { @apply bg-[#FEDD9E] }
+.toolbar .black { @apply bg-black }
+.toolbar .white { @apply bg-[#eee] }
+.toolbar .grey { @apply bg-gray-500 }
+.toolbar .purple { @apply bg-[#c9c9ff] }
+.toolbar .peach { @apply bg-[#ffbdbd] }
+.toolbar .green { @apply bg-[#e1f7d5]}
+.toolbar .olive { @apply bg-[#778A35] }
+
+.color-selector {
+    @apply p-1 absolute bottom-0 right-11 rounded-md border-solid border-[1px] border-gray-200 bg-white flex flex-row !flex-wrap w-24 items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.12)];;
+    max-height: 300px;
+}
+.color {
+    @apply h-5 w-5 m-1 rounded-xl cursor-pointer border-solid border-[1px] border-transparent relative;
+}
+.active-color {
+    @apply border-zinc-500;
+}
+
+
+@media only screen and (max-height: 360px) {
+    .toolbar {
+        @apply overflow-y-auto;
+    }
+}

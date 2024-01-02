@@ -1,0 +1,18 @@
+.input-container {
+    @apply flex flex-row justify-start items-center rounded-md flex-grow bg-white overflow-hidden mx-2;
+}
+.input {
+    @apply flex-grow border-none bg-none outline-none h-9 mr-2;
+}
+.input-disabled {
+    @apply opacity-70;
+}
+.input-icon {
+    @apply  min-w-[24px] min-h-[24px] !h-6 !w-6 mx-1;
+}
+
+@media only screen and (max-width: 600px) {
+    .input {
+        @apply mx-0 text-xs;
+    }
+}
