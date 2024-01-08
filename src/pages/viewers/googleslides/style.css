@@ -1,0 +1,31 @@
+#slides-viewer-container {
+    @apply bg-[#F2F9FF] m-0 p-0 relative overflow-auto overflow-x-auto;
+    height: 100vh;
+}
+#slides-viewer {
+    @apply border-none overflow-auto overflow-x-auto;
+}
+.slides-viewer-loader {
+    @apply w-full h-[100vh] flex absolute top-0 left-0 flex-col items-center justify-center bg-[#F2F9FF] text-neutral-600;
+    z-index: 1000;
+}
+.slide-y-center {
+    @apply flex flex-col justify-center;
+}
+.slide-x-center {
+    @apply flex flex-col items-center;
+}
+#svg {
+    @apply absolute overflow-auto z-20 bg-none top-0 left-auto select-none;
+}
+.svg-top-auto {
+    @apply !top-auto;
+}
+
+.active-cursor {
+    @apply cursor-crosshair;
+}
+
+#svg rect:focus {
+    @apply bg-blue-500/40;
+}

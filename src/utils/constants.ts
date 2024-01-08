@@ -13,6 +13,11 @@ export const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 export const DEV_KEY = import.meta.env.VITE_GOOGLE_DEV_KEY;
 export const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+export interface GoogleDimensions {
+    x: number;
+    y: number;
+}
+
 export type Extension = 'googledocs' | 'googleslides' | 'txt' | 'doc' | 'ppt' | 'pdf' | 'unsupported' | 'file';
 
 export type Tools =
@@ -53,6 +58,7 @@ export interface LocalData {
     url: string;
     type: Extension;
     google: boolean;
+    ID: string | undefined;
     metadata?: {
         id: string;
         kind: string;

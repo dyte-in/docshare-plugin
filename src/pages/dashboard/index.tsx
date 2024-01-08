@@ -33,7 +33,6 @@ import {
     allowedMimeTypes,
     driveViews,
     errorCodes,
-    excelRegex,
     pluginEvents,
 } from '../../utils/constants';
 
@@ -67,13 +66,16 @@ const Dashboard = () => {
         if (!input) return;
         setLoading(true);
         try {
-        const { url, type, metadata, google } = await urlValidator(input);
+        const { url, type, metadata, google, ID } = await urlValidator(input);
         let serverUrl = url;
         if (type !== 'googleslides') {
-            serverUrl = await getRemoteUrl({type, url, google, metadata }, base, token);
+            serverUrl = await getRemoteUrl({type, url, google, metadata, ID }, base, token);
+        }
+        if (type === 'googleslides') {
+            serverUrl = `http://localhost:4000/google-slides/${ID}`
         }
         if (google) {
-            setLocalStorage({ url: serverUrl, type, metadata })
+            setLocalStorage({ url: serverUrl, type, metadata, ID })
         }
         setData({ type, url: serverUrl });
         setLoading(false);
@@ -146,8 +148,7 @@ const Dashboard = () => {
             customViews: driveViews,
             viewId: 'DOCUMENTS',
             showUploadFolders: true,
-            // TODO: get from env variables
-            setOrigin: 'https://app.devel.dyte.io',
+            setOrigin: plugin.parentURL,
             supportDrives: true,
             callbackFunction: async (data) => {
                 try {
@@ -177,10 +178,14 @@ const Dashboard = () => {
                                 url: serverUrl,
                                 type,
                                 metadata,
+                                ID: doc.id,
                                 google: true
                             }, base, token)
                         }
-                        setLocalStorage({ url: serverUrl, type, metadata });
+                        if (type === 'googleslides') {
+                            serverUrl = `http://localhost:4000/google-slides/${doc.id}`
+                        }
+                        setLocalStorage({ url: serverUrl, type, metadata, ID: doc.id });
                         setData({ url: serverUrl, type })
                     }
                     setLoading(false);
@@ -210,7 +215,7 @@ const Dashboard = () => {
 
     const deleteFile = async (url: string, google = false, remote = false) => {
         const name = url.replace(`${API_BASE}/file/`, '');
-        if (!remote && (!google || (google && url.includes('google-')))) {
+        if (!remote && (!google || (google && url.includes('-google-')))) {
             await axios.delete(`${import.meta.env.VITE_API_BASE}/file/${name}`, {
                 headers: {"Authorization": `Bearer ${token}`},
             });

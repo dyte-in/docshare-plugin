@@ -58,15 +58,9 @@ export default function PDFDocument() {
 
   // On window resize
   useEffect(() => {
-    let winX = window.innerWidth;
-    let winY = window.innerHeight;
     window.onresize = () => {
-      if (winX < window.innerWidth || winY < window.innerHeight) {
-        updateDimensions();
-        updateStyle();
-      }
-      winX = window.innerWidth;
-      winY = window.innerHeight;
+      updateDimensions();
+      updateStyle();
     }
   }, [onRefChange, dimensions])
 
@@ -130,18 +124,24 @@ export default function PDFDocument() {
     // set dimensions
     const initX = parseFloat(ref.current.style.width.replace('px', ''));
     const initY = parseFloat(ref.current.style.height.replace('px', ''));
-    const orientation =  initX <= initY ? 'portrait' : 'landscape';
-    setOrientation(orientation);
-    // add classes
-    ref.current.style.width = `${window.innerWidth * scale}px`;
-    ref.current.style.height = `${(initY * window.innerWidth * scale)/initX}px`;
-    if (orientation === 'portrait') {
-      ref.current.classList.remove('auto-height');
-      ref.current.classList.add('auto-width');
-    } else {
+    const winR = window.innerWidth / window.innerHeight;
+    const docR = initX / initY;
+
+    const or = initX > initY ? 'landscape' : 'portrait';
+
+    if (docR > winR) {
+      ref.current.style.width = `${window.innerWidth * scale}px`;
+      ref.current.style.height = `${(initY * window.innerWidth * scale)/initX}px`;
       ref.current.classList.remove('auto-width');
       ref.current.classList.add('auto-height');
+    } else {
+      ref.current.style.height = `${window.innerHeight * scale}px`;
+      ref.current.style.width = `${(initX * window.innerHeight * scale)/initY}px`;
+      ref.current.classList.remove('auto-height');
+      ref.current.classList.add('auto-width');
     }
+    
+    setOrientation(or);
     if (!dimensions) {
       setDimensions({ x: initX, y: initY });
     }

@@ -39,11 +39,12 @@ const urlValidator = async (url: string): Promise<LocalData> => {
     let type: Extension = 'unsupported';
     let google: boolean = true;
     let metadata: any = undefined;
+    let ID: string | undefined;
     if (
         url.includes('docs.google.com')
         || url.includes('drive.google.com')
     ) {
-        const ID = url.match(googleID)?.[0];
+        ID = url.match(googleID)?.[0];
         if (!ID) {
             throw new Error('001');
         }
@@ -56,7 +57,7 @@ const urlValidator = async (url: string): Promise<LocalData> => {
         google = false;
         type = 'file';
     }
-    return { type, url, google, metadata };
+    return { type, url, google, metadata, ID };
 };
 
 const getFileExtension = (val: string): Extension => {
