@@ -27,6 +27,7 @@ export default function PDFDocument(props: DocumentProps) {
   const tool = useRef<ToolbarState>('none');
   const selectedElements = useRef<Set<string>>(new Set());
   const [docEl, docElUpdate, docElRef] = CanvasRef();
+  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>();
   const {
     doc,
     userId,
@@ -50,15 +51,9 @@ export default function PDFDocument(props: DocumentProps) {
 
   // handle resize
   useEffect(() => {
-    let winX = window.innerWidth;
-    let winY = window.innerHeight;
-
     window.onresize = () => {
-      if (winX < window.innerWidth || winY < window.innerHeight) {
-        setDocumentDimensions();
-      }
-      winX = window.innerWidth;
-      winY = window.innerHeight;
+      setDocumentDimensions();
+      updateStyle
     }
   }, [docElUpdate, dimensions])
 
@@ -82,21 +77,53 @@ export default function PDFDocument(props: DocumentProps) {
     // set dimensions
     const initX = parseFloat(docEl.current.style.width.replace('px', ''));
     const initY = parseFloat(docEl.current.style.height.replace('px', ''));
-    const orientation =  initX <= initY ? 'potrait' : 'landscape';
-    docEl.current.style.width = `${window.innerWidth * scale}px`;
-    docEl.current.style.height = `${(initY * window.innerWidth * scale)/initX}px`;
-    // add classes
-    if (orientation === 'landscape') {
+    const winR = window.innerWidth / window.innerHeight;
+    const docR = initX / initY;
+    const or = initX > initY ? 'landscape' : 'portrait';
+    if (docR > winR) {
+      docEl.current.style.width = `${window.innerWidth * scale}px`;
+      docEl.current.style.height = `${(initY * window.innerWidth * scale)/initX}px`;
       docEl.current.classList.remove('auto-width');
       docEl.current.classList.add('auto-height');
     } else {
+      docEl.current.style.height = `${window.innerHeight * scale}px`;
+      docEl.current.style.width = `${(initX * window.innerHeight * scale)/initY}px`;
       docEl.current.classList.remove('auto-height');
       docEl.current.classList.add('auto-width');
     }
+    setOrientation(or);
     if (!dimensions) {
       setDimensions({ x: initX, y: initY });
     }
   }
+
+  useEffect(() => {
+    updateStyle();
+  }, [scale])
+
+  const updateStyle = () => {
+    const cont = document.getElementById('cont');
+    if (!docEl.current || !cont) return;
+    const contH = window.innerHeight;
+    const contW = window.innerWidth;
+    const docH = docEl.current.clientHeight;
+    const docW = docEl.current.clientWidth;
+
+    let heightModifier: any = 'alignItems';
+    let widthModifier: any = 'justifyContent';
+
+    if (orientation === 'landscape') {
+      heightModifier = 'justifyContent';
+      widthModifier = 'alignItems';
+    }
+
+    if (docH > contH) cont.style[heightModifier] = 'flex-start';
+    else cont.style[heightModifier] = 'center';
+
+    if (docW > contW) cont.style[widthModifier] = 'flex-start';
+    else cont.style[widthModifier] = 'center';
+  }
+
   const handleNext = () => {
     setCurrentPage(Math.min(currentPage+1, pageCount))
     if (!docEl.current) return;
