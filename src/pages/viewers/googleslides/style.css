@@ -15,17 +15,25 @@
 .slide-x-center {
     @apply flex flex-col items-center;
 }
-#svg {
-    @apply absolute overflow-auto z-20 bg-none top-0 left-auto select-none;
+
+/* overlay styles */
+.overlay-slides {
+    @apply absolute top-0 left-0 z-30;
 }
-.svg-top-auto {
+.overlay-y-center {
     @apply !top-auto;
 }
+.overlay-x-center {
+   @apply !left-auto;
+}
 
+/* svg styles */
+#svg {
+    @apply h-full w-full;
+}
 .active-cursor {
     @apply cursor-crosshair;
 }
-
 #svg rect:focus {
     @apply bg-blue-500/40;
 }

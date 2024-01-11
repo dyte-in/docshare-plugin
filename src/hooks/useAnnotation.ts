@@ -5,8 +5,9 @@ import { CursorPoints } from '../utils/constants';
 
 interface Props {
     svg:  React.RefObject<SVGSVGElement>;
-    doc: React.RefObject<HTMLCanvasElement>;
+    doc: React.RefObject<any>;
     page: number;
+    viewer?: 'google' | 'pdf'
 }
 
 type MouseEvent = {
@@ -19,6 +20,11 @@ type MouseEvent = {
 let EL_COUNT = 0;
 let TOOL = '';
 
+const DEFAULT_DIMENSIONS: any = {
+  x: 1280,
+  y: 720,
+};
+
 const useAnnotation = (props: Props) => {
   const {
     user,
@@ -29,7 +35,7 @@ const useAnnotation = (props: Props) => {
     setAnnStore,
     setActiveTool,
   } = useContext(MainContext);
-  const { page, svg, doc } = props;
+  const { page, svg, doc, viewer } = props;
   const selectedElements = useRef<Set<string>>(new Set());
   const [state, setState] = useState<'idle'|'drawing'>('idle');
   const [dimensions, setDimensions] = useState<{x: number; y: number}>();
@@ -52,10 +58,16 @@ const useAnnotation = (props: Props) => {
         setDimensions({x, y});
         return {xS: 1, yS: 1};
       }
+     if (viewer === 'google')
       return {
-        xS: x / dimensions.x,
-        yS: y / dimensions.y,
+        xS: x / DEFAULT_DIMENSIONS.x,
+        yS: y / DEFAULT_DIMENSIONS.y,
       };
+      else 
+        return {
+          xS: x / dimensions.x,
+          yS: y / dimensions.y,
+        };
   }
 
   // Mouse Events
@@ -66,45 +78,45 @@ const useAnnotation = (props: Props) => {
       onMouseDown(clientCoords);
   };
   const onMouseDown = (e: MouseEvent) => {
-      const {x, y} = getCoords(svg.current, e.clientX, e.clientY, doc);
-      setState('drawing');
-      if (activeTool === 'pencil' || activeTool === 'highlight') startPath(x, y);
-      setPoints({
-          ...points,
-          xP: x,
-          yP: y,
-      });
+    const {x, y} = getCoords(svg.current, e.clientX, e.clientY, doc);
+    setState('drawing');
+    if (activeTool === 'pencil' || activeTool === 'highlight') startPath(x, y);
+    setPoints({
+        ...points,
+        xP: x,
+        yP: y,
+    });
   };
   
   // Move
   const onTouchMove = (e: any) => {
-      const clientCoords =  getClientCoords(e);
-      onMouseMove(clientCoords);
+    const clientCoords =  getClientCoords(e);
+    onMouseMove(clientCoords);
   };
   const onMouseMove = (e: MouseEvent) => {
-      if (state !== 'drawing') return;
-      const {x, y} = getCoords(svg.current, e.clientX, e.clientY, doc);
-      if (activeTool === 'pencil' || activeTool === 'highlight') updatePath(x, y);
-      if (activeTool === 'shape' || activeTool === 'text') enableTracer(x, y); 
-      setPoints({
-          ...points,
-          xC: x,
-          yC: y,
-      })
+    if (state !== 'drawing') return;
+    const {x, y} = getCoords(svg.current, e.clientX, e.clientY, doc);
+    if (activeTool === 'pencil' || activeTool === 'highlight') updatePath(x, y);
+    if (activeTool === 'shape' || activeTool === 'text') enableTracer(x, y); 
+    setPoints({
+        ...points,
+        xC: x,
+        yC: y,
+    })
   };
 
   // End
   const onTouchEnd = (e: any) => {
-      const clientCoords =  getClientCoords(e);
-      onMouseUp(clientCoords);
+    const clientCoords =  getClientCoords(e);
+    onMouseUp(clientCoords);
   };
   const onMouseUp = (e: MouseEvent) => {
-      const {x, y} = getCoords(svg.current, e.clientX, e.clientY, doc);
-      setState('idle');
-      if (activeTool === 'text') drawText(x, y);
-      if (activeTool === 'shape') drawRect(x, y);
-      if (activeTool === 'erase') eraseElements();
-      if (activeTool === 'pencil' || activeTool === 'highlight') endPath();
+    const {x, y} = getCoords(svg.current, e.clientX, e.clientY, doc);
+    setState('idle');
+    if (activeTool === 'text') drawText(x, y);
+    if (activeTool === 'shape') drawRect(x, y);
+    if (activeTool === 'erase') eraseElements();
+    if (activeTool === 'pencil' || activeTool === 'highlight') endPath();
   };
 
   // Tool Helper Methods
@@ -151,12 +163,12 @@ const useAnnotation = (props: Props) => {
   };
 
   // Erase All
-  const eraseAll = (remote: boolean = false) => {
-    const svg = document.getElementById('svg');
-    if (!svg) return;
-    svg.innerHTML = '';
+  const eraseAll = async (remote: boolean = false) => {
+    if (!svg.current) return;
+    svg.current.innerHTML = '';
     if (remote) return;
     plugin.emit('remote-erase-all');
+    await plugin.stores.delete(`annotation-page-${page}`);
     const AnnotationStore = plugin.stores.create(`annotation-page-${page}`);
     setAnnStore(AnnotationStore)
   }
@@ -344,11 +356,10 @@ const useAnnotation = (props: Props) => {
 
       if (value) {
           // shape added
-          const svg = document.getElementById('svg');
           const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
           g.innerHTML = value;
-          if (!svg) return;
-          svg.appendChild(g);
+          if (!svg.current) return;
+          svg.current.appendChild(g);
           const el = document.getElementById(key);
           el?.addEventListener('mousemove', () => {
           selectElement(el);

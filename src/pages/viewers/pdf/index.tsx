@@ -21,8 +21,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 
 export default function PDFDocument() {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [ref, onRefChange, setRef] = CanvasRef();
   const {
     doc,
     page,
@@ -35,9 +33,10 @@ export default function PDFDocument() {
     activeColor,
     setAnnStore,
   } = useContext(MainContext);
-  
+  const svgRef = useRef<SVGSVGElement>(null);
   const [scale, setScale] = useState<number>(1);
   const [pages, setPages] = useState<number>(0);
+  const [ref, onRefChange, setRef] = CanvasRef();
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>();
 
   const {
@@ -54,6 +53,7 @@ export default function PDFDocument() {
     page,
     doc: ref,
     svg: svgRef,
+    viewer: 'pdf',
   });
 
   // On window resize

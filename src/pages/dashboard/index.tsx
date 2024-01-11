@@ -72,6 +72,7 @@ const Dashboard = () => {
             serverUrl = await getRemoteUrl({type, url, google, metadata, ID }, base, token);
         }
         if (type === 'googleslides') {
+            // TODO: change server url
             serverUrl = `http://localhost:4000/google-slides/${ID}`
         }
         if (google) {

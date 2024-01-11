@@ -1,19 +1,44 @@
 import './style.css';
 import { MainContext } from '../../../context';
 import Navbar from '../../../components/navbar';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { GoogleDimensions } from '../../../utils/constants';
+import useAnnotation from '../../../hooks/useAnnotation';
+import Toolbar from '../../../components/toolbar';
+import { color } from '../../../utils/annotations';
 
 const DEFAULT_DIMENSIONS: GoogleDimensions = {
   x: 1280,
   y: 720,
 };
+
+let PAGE = 1;
+
 const SlidesViewer = () => {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<number>(1);
   const [pages, setPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
-  const { doc, page, setPage, setData } = useContext(MainContext);
-  const [ dimensions, setDimensions ] = useState<GoogleDimensions>(DEFAULT_DIMENSIONS)
+  const { plugin, doc, page, setPage, setData, handleKeyPress, activeColor, setAnnStore } = useContext(MainContext);
+  const [svgDimensions, setSvgDimensions] = useState<{x: number; y: number}>();
+
+  const {
+    state,
+    onMouseUp,
+    dimensions, 
+    onTouchEnd,
+    onMouseDown,
+    onMouseMove,
+    onTouchMove,
+    onTouchStart,
+    setDimensions,
+  } = useAnnotation({
+    page,
+    doc: ref,
+    svg: svgRef,
+    viewer: 'google',
+  });
 
   // On document load & scale change
   useEffect(() => {
@@ -22,6 +47,7 @@ const SlidesViewer = () => {
 
   // On window resize
   useEffect(() => {
+    PAGE = page
     window.onresize = () => {
       updateDimensions();
     }
@@ -29,7 +55,7 @@ const SlidesViewer = () => {
 
   // Helper Methods
   const updateDimensions = () => {
-    const ratio = dimensions.y/dimensions.x;
+    const ratio = (dimensions?.y ?? DEFAULT_DIMENSIONS.y) / (dimensions?.x ?? DEFAULT_DIMENSIONS.x);
     let x = window.innerWidth;
     let y = x * ratio;
     if (y > window.innerHeight) {
@@ -37,19 +63,30 @@ const SlidesViewer = () => {
       x = (y/ratio);
     }
     const cont = document.getElementById('slides-viewer-container');
+    const dv = document.getElementById('slides-viewer-overlay');
     if ( y * scale > window.innerHeight) {
       cont?.classList.remove('slide-y-center');
+      dv?.classList.remove('overlay-y-center');
     } else {
       cont?.classList.add('slide-y-center');
+      dv?.classList.add('overlay-y-center');
     }
 
     if (x * scale > window.innerWidth) {
       cont?.classList.remove('slide-x-center');
+      dv?.classList.remove('overlay-x-center');
     } else {
       cont?.classList.add('slide-x-center');
+      dv?.classList.add('overlay-x-center');
     }
     setDimensions({ x: x * scale, y: y * scale});
   }
+
+  useEffect(() => {
+    if (!svgDimensions) {
+      setSvgDimensions(dimensions);
+    }
+  }, [dimensions])
 
   // Handling pagination events from google's iframe
   useEffect(() => {
@@ -59,7 +96,7 @@ const SlidesViewer = () => {
         setPages(parseInt(data.set));
       }
       if (data.event === 'keypress') {
-        console.log(data);
+        handleKeyPress(data.code);
         setPage(parseInt(data.page));
       }
     }
@@ -70,16 +107,16 @@ const SlidesViewer = () => {
   }, []);
 
   // Navbar Methods
-  const zoomIn = () => {
-    // syncZoom(scale + 0.05);
-    setScale(scale + 0.05);
-  };
-  const zoomOut = () => {
-    // syncZoom(scale - 0.05);
-    setScale(scale - 0.05);
-  };
+  const zoomIn = () => setScale(scale + 0.05);
+  const zoomOut = () => setScale(scale - 0.05);
   const close = async () => {
+    for(let i = 1; i <= pages; i++) {
+      try {
+        await plugin.stores.delete(`annotation-page-${i}`);
+      } catch (e) {};
+    }
     setData(undefined);
+    setAnnStore(undefined);
     setPage(1);
   };
   const handlePrevPage = () => {
@@ -100,21 +137,45 @@ const SlidesViewer = () => {
         </div>
       }
       <iframe
-        src={doc?.url}
-        width={dimensions.x}
-        height={dimensions.y}
+        src={`${doc?.url}?slide=${PAGE}`}
+        width={dimensions?.x ?? DEFAULT_DIMENSIONS.x}
+        height={dimensions?.y ?? DEFAULT_DIMENSIONS.y}
         id='slides-viewer'
       ></iframe>
-      <svg 
-        id='svg'
-        xmlns="http://www.w3.org/2000/svg"
-        className={scale > 1 ? '' : 'svg-top-auto'}
+      <div
+        ref={ref}
+        id="slides-viewer-overlay"
+        className='overlay-slides'
         style={{
-          height: `${dimensions.y}`,
-          width: `${dimensions.x}`,
+          height: `${dimensions?.y}px`,
+          width: `${dimensions?.x}px`,
         }}
-        viewBox={`0 0 ${dimensions?.x} ${dimensions?.y}`}
-      ></svg>
+        onMouseDown={onMouseDown}
+        onTouchStart={onTouchStart}
+        onMouseMove={onMouseMove}
+        onTouchMove={onTouchMove}
+        onMouseUp={onMouseUp}
+        onTouchEnd={onTouchEnd}
+      >
+        {
+          svgDimensions?.x && svgDimensions?.y && (
+            <svg 
+              id='svg'
+              ref={svgRef}
+              xmlns="http://www.w3.org/2000/svg"
+              className={state !== 'idle' ? 'active-cursor' : ''}
+              viewBox={`0 0 ${DEFAULT_DIMENSIONS.x} ${DEFAULT_DIMENSIONS.y}`}
+            ></svg>
+          )
+        }
+        <div id="tracer-element"></div>
+        <textarea 
+        id="text-tool"
+        maxLength={201}
+        placeholder='200 characters allowed'
+        style={{ color: color(activeColor) }}></textarea> 
+      </div>
+      
       <Navbar
         scale={scale * 100}
         page={page}
@@ -125,14 +186,9 @@ const SlidesViewer = () => {
         prev={handlePrevPage}
         next={handleNextPage}
       />
+      <Toolbar/>
     </div>
   )
 }
 
 export default SlidesViewer
-
-/**
- * TODO:
- * 1. add collaborative pagination
- * 2. add collaborative annotations
-**/

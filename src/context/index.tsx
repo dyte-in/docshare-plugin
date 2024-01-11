@@ -31,6 +31,11 @@ const MainProvider = ({ children }: { children: any }) => {
         await DocumentStore.set('page', page);
         updatePage(page);
     }
+    
+    const handleKeyPress = async (code: number) => {
+        if (!plugin) return;
+        plugin.emit('remote-keypress', { code });       
+    } 
 
     useEffect(() => {
         if (!page || !plugin) return;
@@ -79,9 +84,15 @@ const MainProvider = ({ children }: { children: any }) => {
             }
             else updateDoc(document);
         });
-        DocumentStore.subscribe('page', ({page}) => {
-            updatePage(page);
+        DocumentStore.subscribe('page', ({ page: p }: { page: number }) => {
+            updatePage(p);
         });
+
+        // listen to events
+        dytePlugin.on('remote-keypress', ({ code }: { code: number }) => {
+            const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
+            iframe?.contentWindow?.postMessage({ event: 'keydown-remote', code }, '*');
+        })
 
         // populate from config
         dytePlugin.room.on('config', async ({ followId, document }: { followId: string, document: string }) => {
@@ -109,6 +120,7 @@ const MainProvider = ({ children }: { children: any }) => {
         loadPlugin();
     }, [])
 
+
     return (
         <MainContext.Provider value={{
             doc,
@@ -127,6 +139,7 @@ const MainProvider = ({ children }: { children: any }) => {
             setAnnStore,
             setActiveTool,
             setActiveColor,
+            handleKeyPress,
         }}>
             {children}
         </MainContext.Provider>
@@ -136,8 +149,5 @@ const MainProvider = ({ children }: { children: any }) => {
 export { MainContext, MainProvider } 
 
 // TODO: handle plugin events for:
-// 2. page changes
-// 4. annotations
-// 5. deselecting docs
-// 6. annotations
-// 7. sync zoom and scroll for recorder/livestreamer/hidden-peers
+// 1. sync animations & pages
+// 2. sync zoom and scroll for recorder/livestreamer/hidden-peers
