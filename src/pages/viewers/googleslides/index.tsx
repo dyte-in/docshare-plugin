@@ -20,7 +20,19 @@ const SlidesViewer = () => {
   const [scale, setScale] = useState<number>(1);
   const [pages, setPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
-  const { plugin, doc, page, setPage, setData, handleKeyPress, activeColor, setAnnStore } = useContext(MainContext);
+  const {
+    doc,
+    user,
+    page,
+    hostId,
+    plugin,
+    setPage,
+    setData,
+    isRecorder,
+    activeColor,
+    setAnnStore,
+    handleKeyPress,
+  } = useContext(MainContext);
   const [svgDimensions, setSvgDimensions] = useState<{x: number; y: number}>();
 
   const {
@@ -52,6 +64,49 @@ const SlidesViewer = () => {
       updateDimensions();
     }
   }, [])
+
+  // On document scroll
+  useEffect(() => {
+    if (!plugin || hostId !== user.id) return;
+    const el = document.getElementById('slides-viewer-container');
+    if (!el) return;
+    const scrollListener = (e: any) => {
+      const scrollObj = {
+        x: e.target.scrollLeft / e.target.scrollWidth,
+        y: e.target.scrollTop / e.target.scrollHeight,
+      }
+      plugin.emit('syncScroll', scrollObj);
+    }
+    el.addEventListener("scroll", scrollListener);
+
+    return () => {
+      el.removeEventListener('scroll', scrollListener)
+    }
+  }, [plugin, hostId, user])
+
+
+  // Listen for zoom & scroll events from host
+  useEffect(() => {
+    if (!plugin || !isRecorder) return;
+    plugin.addListener('syncZoom', ({ zoom }: { zoom: number }) => {
+      updateDimensions();
+      setScale(zoom);
+    })
+    plugin.addListener('syncScroll', ({ x, y }: { x: number; y: number; }) => {
+      console.log(x, y);
+      const el = document.getElementById('slides-viewer-container');
+      if (!el) return;
+      el.scrollTo({
+        top: y * el.scrollHeight,
+        left: x * el.scrollWidth,
+        behavior: 'smooth',
+      });
+    })
+    return () => {
+      plugin.removeListeners('syncZoom');
+      plugin.removeListeners('syncScroll');
+    }
+  }, [plugin, isRecorder])
 
   // Helper Methods
   const updateDimensions = () => {
@@ -107,8 +162,18 @@ const SlidesViewer = () => {
   }, []);
 
   // Navbar Methods
-  const zoomIn = () => setScale(scale + 0.05);
-  const zoomOut = () => setScale(scale - 0.05);
+  const zoomIn = () => {
+    syncZoom(scale + 0.05);
+    setScale(scale + 0.05);
+  };
+  const zoomOut = () => {
+    syncZoom(scale - 0.05);
+    setScale(scale - 0.05);
+  };
+  const syncZoom = (zoom: number) => {
+    if (hostId !== user.id) return;
+    plugin.emit('syncZoom', { zoom });
+  }
   const close = async () => {
     for(let i = 1; i <= pages; i++) {
       try {
