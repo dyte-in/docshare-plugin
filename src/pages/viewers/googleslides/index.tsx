@@ -19,11 +19,14 @@ const SlidesViewer = () => {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<number>(1);
   const [pages, setPages] = useState<number>(1);
+  const [closing, setClosing] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const {
+    svg,
     doc,
     user,
     page,
+    setSVG,
     hostId,
     plugin,
     setPage,
@@ -93,7 +96,6 @@ const SlidesViewer = () => {
       setScale(zoom);
     })
     plugin.addListener('syncScroll', ({ x, y }: { x: number; y: number; }) => {
-      console.log(x, y);
       const el = document.getElementById('slides-viewer-container');
       if (!el) return;
       el.scrollTo({
@@ -107,6 +109,16 @@ const SlidesViewer = () => {
       plugin.removeListeners('syncScroll');
     }
   }, [plugin, isRecorder])
+
+  useEffect(() => {
+    if (!plugin) return;
+    plugin.addListener('closePlugin', () => {
+      setClosing(true);
+    })
+    return () => {
+      plugin.removeListeners('closePlugin')
+    }
+  }, [])
 
   // Helper Methods
   const updateDimensions = () => {
@@ -143,24 +155,6 @@ const SlidesViewer = () => {
     }
   }, [dimensions])
 
-  // Handling pagination events from google's iframe
-  useEffect(() => {
-    const handlePostMessage = ({data}: any) => {
-      if (data.event === 'load') {
-        setLoading(false);
-        setPages(parseInt(data.set));
-      }
-      if (data.event === 'keypress') {
-        handleKeyPress(data.code);
-        setPage(parseInt(data.page));
-      }
-    }
-    window.addEventListener('message', handlePostMessage);
-    return () => {
-      window.removeEventListener('message', handlePostMessage);
-    }
-  }, []);
-
   // Navbar Methods
   const zoomIn = () => {
     syncZoom(scale + 0.05);
@@ -175,23 +169,62 @@ const SlidesViewer = () => {
     plugin.emit('syncZoom', { zoom });
   }
   const close = async () => {
+    setClosing(true);
+    plugin.emit('closePlugin');
     for(let i = 1; i <= pages; i++) {
       try {
         await plugin.stores.delete(`annotation-page-${i}`);
       } catch (e) {};
-    }
-    setData(undefined);
+    };
     setAnnStore(undefined);
-    setPage(1);
+    await setPage(1);
+    await setData(undefined);
   };
+
   const handlePrevPage = () => {
     const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
     iframe?.contentWindow?.postMessage({ event: 'keydown', code: 37 }, '*');
+    setTimeout(() => {
+      const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
+      iframe?.contentWindow?.postMessage({ event: 'fetch-svg', code: 37 }, '*');
+    }, 3000)
   }
   const handleNextPage = () => {
     const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
     iframe?.contentWindow?.postMessage({ event: 'keydown', code: 39 }, '*');
+    setTimeout(() => {
+      const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
+      iframe?.contentWindow?.postMessage({ event: 'fetch-svg', code: 39 }, '*');
+    }, 3000)
   }
+
+  // Handling pagination events from google's iframe
+  useEffect(() => {
+    const handlePostMessage = ({data}: any) => {
+      if (data.event === 'fetch-svg-response') {
+        setSVG(data.svg)
+      }
+      if (data.event === 'load') {
+        setLoading(false);
+        setPages(parseInt(data.set));
+        if (svg) {
+          const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
+          iframe?.contentWindow?.postMessage({ event: 'update-svg', svg }, '*');
+        }
+      }
+      if (data.event === 'page') {
+        if (closing) return;
+        setPage(parseInt(data.page));
+      }
+      if (data.event === 'keypress') {
+        handleKeyPress(data.code);
+      }
+    }
+    window.addEventListener('message', handlePostMessage);
+    return () => {
+      window.removeEventListener('message', handlePostMessage);
+    }
+  }, [closing]);
 
   return (
     <div id='slides-viewer-container'>

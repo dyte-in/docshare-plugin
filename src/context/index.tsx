@@ -1,7 +1,7 @@
 import DytePlugin, { DyteStore } from '@dytesdk/plugin-sdk';
 import React, { useEffect, useState } from 'react'
-import { Extension, LocalData, Tools, colors } from '../utils/constants';
-import { urlValidator } from '../utils/files';
+import { API_BASE, Extension, LocalData, Tools, colors } from '../utils/constants';
+import { getRemoteUrl, urlValidator } from '../utils/files';
 
 const MainContext = React.createContext<any>({});
 
@@ -9,17 +9,20 @@ const MainProvider = ({ children }: { children: any }) => {
     const [user, setUser] = useState<any>();
     const [base, setBase] = useState<string>();
     const [token, setToken] = useState<string>();
+    const [svg, updateSVG] = useState<string>('');
     const [page, updatePage] = useState<number>(1);
     const [hostId, setHostId] = useState<string>('');
     const [plugin, setPlugin] = useState<DytePlugin>();
-    const [activeTool, setActiveTool] = useState<Tools>('cursor');
-    const [recorder, setRecorder] = useState<boolean>(false);
     const [annStore, setAnnStore] = useState<DyteStore>();
+    const [loading, setLoading] = useState<boolean>(false);
+    const [recorder, setRecorder] = useState<boolean>(false);
+    const [activeTool, setActiveTool] = useState<Tools>('cursor');
     const [doc, updateDoc] = useState<{url: String, type: Extension}>();
     const [activeColor, setActiveColor] = useState<typeof colors[number]>('purple');
 
     const setData = async (val: Pick<LocalData, 'url' | 'type'>) => {
         if (!plugin) return;
+        if (!val) setSVG('');
         const DocumentStore = plugin.stores.get('doc');
         await DocumentStore.set('document', val);
         updateDoc(val);
@@ -31,10 +34,16 @@ const MainProvider = ({ children }: { children: any }) => {
         await DocumentStore.set('page', page);
         updatePage(page);
     }
+
+    const setSVG = async (svg: string) => {
+        if (!plugin) return;
+        const DocumentStore = plugin.stores.get('doc');
+        await DocumentStore.set('svg', svg);
+    }
     
     const handleKeyPress = async (code: number) => {
         if (!plugin) return;
-        plugin.emit('remote-keypress', { code });       
+        plugin.emit('remote-keypress', { code });   
     } 
 
     useEffect(() => {
@@ -72,6 +81,9 @@ const MainProvider = ({ children }: { children: any }) => {
         // set inital store data
         const currentDoc = DocumentStore.get('document');
         const currentPage = DocumentStore.get('page');
+        const currentSVG = DocumentStore.get('svg');
+        console.log('IMP: ', currentSVG);
+        if (currentSVG) updateSVG(currentSVG);
         if (currentDoc?.url) updateDoc(currentDoc);
         if (currentPage) updatePage(currentPage);
 
@@ -79,6 +91,7 @@ const MainProvider = ({ children }: { children: any }) => {
         // subscribe to data change
         DocumentStore.subscribe('document', ({document}) => {
             if (!document.url) {
+                setLoading(false);
                 updateDoc(undefined);
                 setAnnStore(undefined);
             }
@@ -95,23 +108,32 @@ const MainProvider = ({ children }: { children: any }) => {
         })
 
         // populate from config
-        dytePlugin.room.on('config', async ({ followId, document }: { followId: string, document: string }) => {
+        dytePlugin.room.on('config', async (data) => {
+        
+            const {followId, document: doc } = data.payload;
             setHostId(followId);
-            const data = await urlValidator(document);
+            const { url, type, metadata, google, ID} = await urlValidator(doc);
+            setLoading(true);
+            
+            
             // update plugin store if you are the host
-            if (followId === peer.id || enabledBy === peer.id) {
-                setData({
-                    type: data.type,
-                    url: data.url,
-                })
-                return;
-            }
-            updateDoc({
-                type: data.type,
-                url: data.url,
-            });
-        });
+            if (enabledBy !== peer.id) return;
 
+            let serverUrl = url;
+            if (type !== 'googleslides') {
+                serverUrl = await getRemoteUrl({type, url, google, metadata, ID }, roomName, dytePlugin.authToken);
+            }
+            if (type === 'googleslides') {
+                serverUrl = `${API_BASE}/google-slides/${ID}`
+            }
+            const document = { type, url: serverUrl };
+            setLoading(false);
+            const DocumentStore = dytePlugin.stores.get('doc');
+            await DocumentStore.set('document', document);
+            updateDoc(document);
+            await DocumentStore.set('page', 1);
+            updatePage(1);
+        });
         dytePlugin.ready();
         setPlugin(dytePlugin);
     }
@@ -123,6 +145,7 @@ const MainProvider = ({ children }: { children: any }) => {
 
     return (
         <MainContext.Provider value={{
+            svg,
             doc,
             base,
             user,
@@ -130,12 +153,15 @@ const MainProvider = ({ children }: { children: any }) => {
             token,
             plugin,
             hostId,
+            loading, 
             recorder,
             annStore,
             activeTool,
             activeColor,
+            setSVG,
             setData,
             setPage,
+            setLoading,
             setAnnStore,
             setActiveTool,
             setActiveColor,
@@ -147,7 +173,3 @@ const MainProvider = ({ children }: { children: any }) => {
 }
 
 export { MainContext, MainProvider } 
-
-// TODO: handle plugin events for:
-// 1. sync animations & pages
-// 2. sync zoom and scroll for recorder/livestreamer/hidden-peers

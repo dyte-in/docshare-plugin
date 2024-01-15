@@ -12,7 +12,7 @@ import {
 } from "./constants";
 
 const fetchRecentFiles = async (base: string): Promise<any[]> => {
-    const result = await axios.get(`${import.meta.env.VITE_API_BASE}/files/${base}`);
+    const result = await axios.get(`${API_BASE}/files/${base}`);
     return result.data.files ?? [];
 };
 const fetchRecentDriveFiles = (): Omit<LocalData, 'google'>[] => {

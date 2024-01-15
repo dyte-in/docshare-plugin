@@ -46,19 +46,24 @@ const Dashboard = () => {
     const [files, setFiles] = useState<any>([]);
     const [input, setInput] = useState<string>('');
     const [driveFiles, setDriveFiles] = useState<any>([]);
-    const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<keyof typeof errorCodes | undefined>();
 
     const {
+        page,
         base,
         token,
         setData,
-        plugin
+        plugin,
+        loading,
+        setLoading,
     }: {
+        page: number;
         base: string;
         token: string;
         setData: any;
-        plugin: DytePlugin
+        plugin: DytePlugin;
+        loading: boolean;
+        setLoading: any;
     } = useContext(MainContext);
     const [openPicker] = useDrivePicker();  
    
@@ -72,8 +77,7 @@ const Dashboard = () => {
             serverUrl = await getRemoteUrl({type, url, google, metadata, ID }, base, token);
         }
         if (type === 'googleslides') {
-            // TODO: change server url
-            serverUrl = `http://localhost:4000/google-slides/${ID}`
+            serverUrl = `${API_BASE}/google-slides/${ID}`
         }
         if (google) {
             setLocalStorage({ url: serverUrl, type, metadata, ID })
@@ -116,9 +120,7 @@ const Dashboard = () => {
             const file = e.dataTransfer.files[0];
             const name = `${base}-${file.name ?? genName()}`
 
-            console.log(file.type);
             if (!allowedMimeTypes.includes(file.type)) {
-                console.log(file.type);
                 throw new Error('002');
             } 
             formData.append('file', file, name);
@@ -184,7 +186,7 @@ const Dashboard = () => {
                             }, base, token)
                         }
                         if (type === 'googleslides') {
-                            serverUrl = `http://localhost:4000/google-slides/${doc.id}`
+                            serverUrl = `${API_BASE}/google-slides/${doc.id}`
                         }
                         setLocalStorage({ url: serverUrl, type, metadata, ID: doc.id });
                         setData({ url: serverUrl, type })
@@ -217,7 +219,7 @@ const Dashboard = () => {
     const deleteFile = async (url: string, google = false, remote = false) => {
         const name = url.replace(`${API_BASE}/file/`, '');
         if (!remote && (!google || (google && url.includes('-google-')))) {
-            await axios.delete(`${import.meta.env.VITE_API_BASE}/file/${name}`, {
+            await axios.delete(`${API_BASE}/file/${name}`, {
                 headers: {"Authorization": `Bearer ${token}`},
             });
         } 

@@ -98,7 +98,6 @@ export default function PDFDocument() {
       setScale(zoom);
     })
     plugin.addListener('syncScroll', ({ x, y }: { x: number; y: number; }) => {
-      console.log(x, y);
       const el = document.getElementById('cont');
       if (!el) return;
       el.scrollTo({
