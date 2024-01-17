@@ -51,7 +51,7 @@ const Toolbar = () => {
             {
               tools.map(({tool, icon, label}, index) => {
                 if (tool === 'color') return (
-                  <div>
+                  <div key={index}>
                     <div
                       id="color"
                       className={`color ${activeColor}`}
