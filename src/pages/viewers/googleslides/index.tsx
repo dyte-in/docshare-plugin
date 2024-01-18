@@ -6,6 +6,7 @@ import { GoogleDimensions } from '../../../utils/constants';
 import useAnnotation from '../../../hooks/useAnnotation';
 import Toolbar from '../../../components/toolbar';
 import { color } from '../../../utils/annotations';
+import { DyteStore } from '@dytesdk/plugin-sdk';
 
 const DEFAULT_DIMENSIONS: GoogleDimensions = {
   x: 1280,
@@ -26,11 +27,13 @@ const SlidesViewer = () => {
     doc,
     user,
     page,
-    setSVG,
     hostId,
     plugin,
+    setKeys,
     setPage,
     setData,
+    setActions,
+    actions,
     isRecorder,
     activeColor,
     setAnnStore,
@@ -171,65 +174,61 @@ const SlidesViewer = () => {
   const close = async () => {
     setClosing(true);
     plugin.emit('closePlugin');
+    const KeyStore: DyteStore = plugin.stores.get('keys');
     for(let i = 1; i <= pages; i++) {
       try {
         await plugin.stores.delete(`annotation-page-${i}`);
+        KeyStore.delete(i.toString());
       } catch (e) {};
     };
     setAnnStore(undefined);
-    await setPage(1);
+    await setPage(1, 1);
     await setData(undefined);
   };
 
-  const handlePrevPage = () => {
+  const handlePrevPage = async () => {
+    await setKeys(37);
     const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
     iframe?.contentWindow?.postMessage({ event: 'keydown', code: 37 }, '*');
-    setTimeout(() => {
-      const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
-      iframe?.contentWindow?.postMessage({ event: 'fetch-svg', code: 37 }, '*');
-    }, 3000)
   }
-  const handleNextPage = () => {
+  const handleNextPage = async () => {
+    await setKeys(39);
     const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
     iframe?.contentWindow?.postMessage({ event: 'keydown', code: 39 }, '*');
-    setTimeout(() => {
-      const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
-      iframe?.contentWindow?.postMessage({ event: 'fetch-svg', code: 39 }, '*');
-    }, 3000)
   }
 
   // Handling pagination events from google's iframe
   useEffect(() => {
     const handlePostMessage = ({data}: any) => {
-      if (data.event === 'fetch-svg-response') {
-        setSVG(data.svg)
-      }
       if (data.event === 'load') {
         setLoading(false);
         setPages(parseInt(data.set));
-        if (svg) {
-          const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
-          iframe?.contentWindow?.postMessage({ event: 'update-svg', svg }, '*');
+        const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
+        if (actions.length > 0) {
+          iframe?.contentWindow?.postMessage({ event: 'update-actions', actions }, '*');
         }
       }
       if (data.event === 'page') {
         if (closing) return;
-        setPage(parseInt(data.page));
+        setPage(parseInt(data.page), page);
       }
       if (data.event === 'keypress') {
         handleKeyPress(data.code);
+      }
+      if (data.event === 'actions-updated') {
+        setActions([]);
       }
     }
     window.addEventListener('message', handlePostMessage);
     return () => {
       window.removeEventListener('message', handlePostMessage);
     }
-  }, [closing]);
+  }, [page, actions, closing]);
 
   return (
     <div id='slides-viewer-container'>
       {
-        loading && 
+        (loading || actions?.length > 0) && 
         <div className='slides-viewer-loader'>
           Loading your document ...
         </div>

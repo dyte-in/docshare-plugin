@@ -1,10 +1,10 @@
 {
     "name": "DocuShare",
     "version": "0.0.1",
-    "description": "Share documents with ease.",
-    "pluginId": "18865615-407c-4880-9c28-e7fbc70dff32",
-    "url": "https://18865615-407c-4880-9c28-e7fbc70dff32-latest.plugins.dyte.app",
+    "description": "Share documents with ease",
+    "pluginId": "304f9ee1-f52e-4a6a-b26b-0dc9d3a692f8",
     "picture": "https://dyte-plugins.s3.ap-south-1.amazonaws.com/icons/docshare-logo.png",
+    "url": "https://304f9ee1-f52e-4a6a-b26b-0dc9d3a692f8-latest.plugins.dyte.app",
     "files": {
         "include": [
             "index.html",

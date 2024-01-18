@@ -9,7 +9,6 @@ const MainProvider = ({ children }: { children: any }) => {
     const [user, setUser] = useState<any>();
     const [base, setBase] = useState<string>();
     const [token, setToken] = useState<string>();
-    const [svg, updateSVG] = useState<string>('');
     const [page, updatePage] = useState<number>(1);
     const [hostId, setHostId] = useState<string>('');
     const [plugin, setPlugin] = useState<DytePlugin>();
@@ -17,34 +16,56 @@ const MainProvider = ({ children }: { children: any }) => {
     const [loading, setLoading] = useState<boolean>(false);
     const [recorder, setRecorder] = useState<boolean>(false);
     const [activeTool, setActiveTool] = useState<Tools>('cursor');
+    const [actions, setActions] = useState<number[]>([]);
     const [doc, updateDoc] = useState<{url: String, type: Extension}>();
     const [activeColor, setActiveColor] = useState<typeof colors[number]>('purple');
 
     const setData = async (val: Pick<LocalData, 'url' | 'type'>) => {
         if (!plugin) return;
-        if (!val) setSVG('');
         const DocumentStore = plugin.stores.get('doc');
         await DocumentStore.set('document', val);
         updateDoc(val);
     }
 
-    const setPage = async (page: number) => {
+    const setPage = async (curr: number, old: number) => {
         if (!plugin) return;
+        if (doc?.type === 'googleslides') {
+            let oldPage = old.toString();
+            const KeyStore = plugin.stores.get('keys');
+            if (curr > old) {
+                const data = KeyStore.get(oldPage);
+                const popped = data?.pop();
+                if (popped) {
+                    KeyStore.set(oldPage, data);
+                    console.log('val:', oldPage, KeyStore.get(oldPage))       
+                }
+            } if (curr < old) {
+                KeyStore.set(oldPage, []);
+            }
+        }
         const DocumentStore = plugin.stores.get('doc');
-        await DocumentStore.set('page', page);
-        updatePage(page);
-    }
-
-    const setSVG = async (svg: string) => {
-        if (!plugin) return;
-        const DocumentStore = plugin.stores.get('doc');
-        await DocumentStore.set('svg', svg);
+        await DocumentStore.set('page', curr);
+        updatePage(curr);
     }
     
     const handleKeyPress = async (code: number) => {
         if (!plugin) return;
         plugin.emit('remote-keypress', { code });   
     } 
+
+    const setKeys = async (code: number) => {
+        if (!plugin) return;
+        const KeyStore = plugin.stores.get('keys');
+        const pageNum = page.toString();
+        const val = KeyStore.get(pageNum);
+        const length = val?.length ?? 1;
+        if ((val && val[length - 1] === 37)) {
+            val?.pop();
+            await KeyStore.set(pageNum, val);
+            return;
+        }
+        await KeyStore.update(pageNum, [code]) 
+    }
 
     useEffect(() => {
         if (!page || !plugin) return;
@@ -76,17 +97,19 @@ const MainProvider = ({ children }: { children: any }) => {
 
         // populate store
         await dytePlugin.stores.populate('doc');
+        await dytePlugin.stores.populate('keys');
         const DocumentStore = dytePlugin.stores.create('doc');
+        const KeyStore = dytePlugin.stores.create('keys');
 
         // set inital store data
         const currentDoc = DocumentStore.get('document');
         const currentPage = DocumentStore.get('page');
-        const currentSVG = DocumentStore.get('svg');
-        console.log('IMP: ', currentSVG);
-        if (currentSVG) updateSVG(currentSVG);
+        const currentKeys = KeyStore.getAll();
         if (currentDoc?.url) updateDoc(currentDoc);
         if (currentPage) updatePage(currentPage);
-
+        if (Object.keys(currentKeys).length > 0) {
+            setActions(currentKeys[currentPage]);
+        }
 
         // subscribe to data change
         DocumentStore.subscribe('document', ({document}) => {
@@ -142,23 +165,23 @@ const MainProvider = ({ children }: { children: any }) => {
         loadPlugin();
     }, [])
 
-
     return (
         <MainContext.Provider value={{
-            svg,
             doc,
             base,
             user,
             page,
             token,
             plugin,
+            actions,
             hostId,
             loading, 
             recorder,
             annStore,
             activeTool,
             activeColor,
-            setSVG,
+            setActions,
+            setKeys,
             setData,
             setPage,
             setLoading,
