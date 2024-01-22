@@ -36,8 +36,7 @@ const MainProvider = ({ children }: { children: any }) => {
                 const data = KeyStore.get(oldPage);
                 const popped = data?.pop();
                 if (popped) {
-                    KeyStore.set(oldPage, data);
-                    console.log('val:', oldPage, KeyStore.get(oldPage))       
+                    KeyStore.set(oldPage, data);    
                 }
             } if (curr < old) {
                 KeyStore.set(oldPage, []);
@@ -45,6 +44,7 @@ const MainProvider = ({ children }: { children: any }) => {
         }
         const DocumentStore = plugin.stores.get('doc');
         await DocumentStore.set('page', curr);
+        plugin.room.emitEvent('page-changed', { page: curr});
         updatePage(curr);
     }
     
@@ -59,10 +59,14 @@ const MainProvider = ({ children }: { children: any }) => {
         const pageNum = page.toString();
         const val = KeyStore.get(pageNum);
         const length = val?.length ?? 1;
-        if ((val && val[length - 1] === 37)) {
-            val?.pop();
-            await KeyStore.set(pageNum, val);
-            return;
+        if (code === 37 && (!val || !val?.length)) return;
+        console.log('setting for page', pageNum);
+        if (code === 39) {
+            if (val && val[length - 1] === 37 && val[length-2] !== 37) {
+                val?.pop();
+                await KeyStore.set(pageNum, val);
+                return;
+            }
         }
         await KeyStore.update(pageNum, [code]) 
     }
@@ -122,6 +126,7 @@ const MainProvider = ({ children }: { children: any }) => {
         });
         DocumentStore.subscribe('page', ({ page: p }: { page: number }) => {
             updatePage(p);
+            dytePlugin.room.emitEvent('page-changed', { page: p });
         });
 
         // listen to events
@@ -132,13 +137,10 @@ const MainProvider = ({ children }: { children: any }) => {
 
         // populate from config
         dytePlugin.room.on('config', async (data) => {
-        
             const {followId, document: doc } = data.payload;
             setHostId(followId);
             const { url, type, metadata, google, ID} = await urlValidator(doc);
             setLoading(true);
-            
-            
             // update plugin store if you are the host
             if (enabledBy !== peer.id) return;
 

@@ -140,14 +140,12 @@ const getRemoteUrl = async (
             const type = raw.headers["content-type"];
             blob = new Blob([raw.data]);
             if (!allowedMimeTypes.includes(type)) {
-                console.log(blob)
                 throw new Error('002');
             }
             fileName = `${base}-${blob.name ?? genName()}`;
         }
         formData.append("file", blob, fileName);
     } catch (e) {
-        console.log(e);
         throw new Error('003')
     }
 

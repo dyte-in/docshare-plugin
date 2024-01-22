@@ -1,4 +1,5 @@
 import './style.css';
+import { debounce } from 'lodash';
 import { MainContext } from '../../../context';
 import Navbar from '../../../components/navbar';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -86,9 +87,21 @@ const SlidesViewer = () => {
     el.addEventListener("scroll", scrollListener);
 
     return () => {
-      el.removeEventListener('scroll', scrollListener)
+      el.removeEventListener('scroll', scrollListener);
     }
   }, [plugin, hostId, user])
+
+  // On key press
+  useEffect(() => {
+    const keyDownHandler = debounce((e: any) => {
+      if (e.keyCode === 39) handleNextPage();
+      if (e.keyCode === 37) handlePrevPage();
+    },100)
+    window.addEventListener('keydown', keyDownHandler)
+    return () => {
+      window.removeEventListener('keydown', keyDownHandler)
+    }
+  }, [page])
 
 
   // Listen for zoom & scroll events from host
