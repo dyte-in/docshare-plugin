@@ -1,11 +1,12 @@
 import DytePlugin, { DyteStore } from '@dytesdk/plugin-sdk';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { API_BASE, Extension, LocalData, Tools, colors } from '../utils/constants';
 import { getRemoteUrl, urlValidator } from '../utils/files';
 
 const MainContext = React.createContext<any>({});
 
 const MainProvider = ({ children }: { children: any }) => {
+    const svgRef = useRef<SVGSVGElement>(null);
     const [user, setUser] = useState<any>();
     const [base, setBase] = useState<string>();
     const [token, setToken] = useState<string>();
@@ -17,6 +18,7 @@ const MainProvider = ({ children }: { children: any }) => {
     const [recorder, setRecorder] = useState<boolean>(false);
     const [activeTool, setActiveTool] = useState<Tools>('cursor');
     const [actions, setActions] = useState<number[]>([]);
+    const [pages, setPages] = useState<number>(1);
     const [doc, updateDoc] = useState<{url: String, type: Extension}>();
     const [activeColor, setActiveColor] = useState<typeof colors[number]>('purple');
 
@@ -27,7 +29,7 @@ const MainProvider = ({ children }: { children: any }) => {
         updateDoc(val);
     }
 
-    const setPage = async (curr: number, old: number) => {
+    const setPage = async (curr: number, old: number = 1) => {
         if (!plugin) return;
         if (doc?.type === 'googleslides') {
             let oldPage = old.toString();
@@ -60,7 +62,6 @@ const MainProvider = ({ children }: { children: any }) => {
         const val = KeyStore.get(pageNum);
         const length = val?.length ?? 1;
         if (code === 37 && (!val || !val?.length)) return;
-        console.log('setting for page', pageNum);
         if (code === 39) {
             if (val && val[length - 1] === 37 && val[length-2] !== 37) {
                 val?.pop();
@@ -103,7 +104,7 @@ const MainProvider = ({ children }: { children: any }) => {
         await dytePlugin.stores.populate('doc');
         await dytePlugin.stores.populate('keys');
         const DocumentStore = dytePlugin.stores.create('doc');
-        const KeyStore = dytePlugin.stores.create('keys');
+        let KeyStore = dytePlugin.stores.create('keys');
 
         // set inital store data
         const currentDoc = DocumentStore.get('document');
@@ -136,27 +137,49 @@ const MainProvider = ({ children }: { children: any }) => {
         })
 
         // populate from config
-        dytePlugin.room.on('config', async (data) => {
-            const {followId, document: doc } = data.payload;
-            setHostId(followId);
-            const { url, type, metadata, google, ID} = await urlValidator(doc);
+        dytePlugin.room.on('config', async function (data) {
             setLoading(true);
-            // update plugin store if you are the host
-            if (enabledBy !== peer.id) return;
-
+            updateDoc(undefined);
+            // cleanup
+            if (enabledBy === peer.id) {
+                const KeyStore = dytePlugin.stores.get('keys');
+                for(let i = 1; i <= pages; i++) {
+                    try {
+                      await dytePlugin.stores.delete(`annotation-page-${i}`);
+                      KeyStore.delete(i.toString());
+                    } catch (e) {};
+                };
+            }
+            if (svgRef.current) svgRef.current.innerHTML = '';
+            setPages(1);
+            setAnnStore(undefined);
+            // set config
+            const {followId, document: doc } = data.payload;
+            const {
+                url,
+                type,
+                metadata,
+                google,
+                ID,
+            } = await urlValidator(doc);
+            setHostId(followId);
             let serverUrl = url;
             if (type !== 'googleslides') {
                 serverUrl = await getRemoteUrl({type, url, google, metadata, ID }, roomName, dytePlugin.authToken);
             }
             if (type === 'googleslides') {
-                serverUrl = `${API_BASE}/google-slides/${ID}`
+                serverUrl = `${API_BASE}/google-slides/${ID}`;
             }
             const document = { type, url: serverUrl };
             setLoading(false);
-            const DocumentStore = dytePlugin.stores.get('doc');
-            await DocumentStore.set('document', document);
+
+            // update plugin store if you are the host
+            if (enabledBy === peer.id) {
+                const DocumentStore = dytePlugin.stores.get('doc');
+                await DocumentStore.set('document', document);
+                await DocumentStore.set('page', 1);
+            };
             updateDoc(document);
-            await DocumentStore.set('page', 1);
             updatePage(1);
         });
         dytePlugin.ready();
@@ -169,9 +192,11 @@ const MainProvider = ({ children }: { children: any }) => {
 
     return (
         <MainContext.Provider value={{
+            svgRef,
             doc,
             base,
             user,
+            pages,
             page,
             token,
             plugin,
@@ -183,6 +208,7 @@ const MainProvider = ({ children }: { children: any }) => {
             activeTool,
             activeColor,
             setActions,
+            setPages,
             setKeys,
             setData,
             setPage,

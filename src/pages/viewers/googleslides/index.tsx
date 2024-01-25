@@ -17,21 +17,21 @@ const DEFAULT_DIMENSIONS: GoogleDimensions = {
 let PAGE = 1;
 
 const SlidesViewer = () => {
-  const svgRef = useRef<SVGSVGElement>(null);
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<number>(1);
-  const [pages, setPages] = useState<number>(1);
   const [closing, setClosing] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const {
-    svg,
+    svgRef,
     doc,
     user,
     page,
     hostId,
     plugin,
+    pages,
     setKeys,
     setPage,
+    setPages,
     setData,
     setActions,
     actions,
@@ -195,7 +195,7 @@ const SlidesViewer = () => {
       } catch (e) {};
     };
     setAnnStore(undefined);
-    await setPage(1, 1);
+    await setPage(1);
     await setData(undefined);
   };
 
@@ -217,7 +217,7 @@ const SlidesViewer = () => {
         setLoading(false);
         setPages(parseInt(data.set));
         const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
-        if (actions.length > 0) {
+        if (actions?.length > 0) {
           iframe?.contentWindow?.postMessage({ event: 'update-actions', actions }, '*');
         }
       }

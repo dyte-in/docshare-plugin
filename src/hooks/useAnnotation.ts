@@ -380,16 +380,15 @@ const useAnnotation = (props: Props) => {
   // load inital annotations
   useEffect(() => {
       if (!annStore || !dimensions) return;
-      const svg = document.querySelector('svg');
       const data = annStore.getAll();
   
-      if (!svg) return;
-      svg.innerHTML = '';
+      if (!svg || !svg.current) return;
+      svg.current.innerHTML = '';
 
       for (const id in data) {
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       g.innerHTML = data[id];
-      svg.appendChild(g);
+      svg.current.appendChild(g);
       const el = document.getElementById(id);
       el?.addEventListener('mousemove', () => {
           selectElement(el);
