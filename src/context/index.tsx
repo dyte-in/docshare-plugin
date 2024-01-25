@@ -199,6 +199,10 @@ const MainProvider = ({ children }: { children: any }) => {
         setPlugin(dytePlugin);
     }
 
+    useEffect(() => {
+        loadPlugin();
+    }, [])
+
     return (
         <MainContext.Provider value={{
             svgRef,
