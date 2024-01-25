@@ -29,7 +29,7 @@
 .toolbar .olive { @apply bg-[#778A35] }
 
 .color-selector {
-    @apply p-1 absolute bottom-0 right-11 rounded-md border-solid border-[1px] border-gray-200 bg-white flex flex-row !flex-wrap w-24 items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.12)];;
+    @apply p-1 absolute bottom-0 right-11 rounded-md border-solid border-[1px] border-gray-200 bg-white flex flex-row !flex-wrap w-24 items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.12)] hidden;
     max-height: 300px;
 }
 .color {

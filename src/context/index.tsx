@@ -1,6 +1,6 @@
 import DytePlugin, { DyteStore } from '@dytesdk/plugin-sdk';
 import React, { useEffect, useRef, useState } from 'react'
-import { API_BASE, Extension, LocalData, Tools, colors } from '../utils/constants';
+import { API_BASE, Extension, LocalData, Tools, colors, googleID } from '../utils/constants';
 import { getRemoteUrl, urlValidator } from '../utils/files';
 
 const MainContext = React.createContext<any>({});
@@ -17,8 +17,10 @@ const MainProvider = ({ children }: { children: any }) => {
     const [loading, setLoading] = useState<boolean>(false);
     const [recorder, setRecorder] = useState<boolean>(false);
     const [activeTool, setActiveTool] = useState<Tools>('cursor');
+    const [updating, setUpdating] = useState<boolean>(false);
     const [actions, setActions] = useState<number[]>([]);
     const [pages, setPages] = useState<number>(1);
+    const [ initialPage, setInitialPage] = useState<number>(1);
     const [doc, updateDoc] = useState<{url: String, type: Extension}>();
     const [activeColor, setActiveColor] = useState<typeof colors[number]>('purple');
 
@@ -46,7 +48,7 @@ const MainProvider = ({ children }: { children: any }) => {
         }
         const DocumentStore = plugin.stores.get('doc');
         await DocumentStore.set('page', curr);
-        plugin.room.emitEvent('page-changed', { page: curr});
+        plugin.room.emitEvent('page-changed', { page: curr,  presentationId: doc?.url.match(googleID)?.[0] });
         updatePage(curr);
     }
     
@@ -111,7 +113,10 @@ const MainProvider = ({ children }: { children: any }) => {
         const currentPage = DocumentStore.get('page');
         const currentKeys = KeyStore.getAll();
         if (currentDoc?.url) updateDoc(currentDoc);
-        if (currentPage) updatePage(currentPage);
+        if (currentPage){
+            updatePage(currentPage);
+            setInitialPage(currentPage);
+        }
         if (Object.keys(currentKeys).length > 0) {
             setActions(currentKeys[currentPage]);
         }
@@ -127,7 +132,7 @@ const MainProvider = ({ children }: { children: any }) => {
         });
         DocumentStore.subscribe('page', ({ page: p }: { page: number }) => {
             updatePage(p);
-            dytePlugin.room.emitEvent('page-changed', { page: p });
+            dytePlugin.room.emitEvent('page-changed', { page: p, presentationId: doc?.url.match(googleID)?.[0] });
         });
 
         // listen to events
@@ -154,7 +159,7 @@ const MainProvider = ({ children }: { children: any }) => {
             setPages(1);
             setAnnStore(undefined);
             // set config
-            const {followId, document: doc } = data.payload;
+            const {followId, document: doc, page: pageNum } = data.payload;
             const {
                 url,
                 type,
@@ -171,24 +176,28 @@ const MainProvider = ({ children }: { children: any }) => {
                 serverUrl = `${API_BASE}/google-slides/${ID}`;
             }
             const document = { type, url: serverUrl };
+            updatePage(pageNum ?? 1);
+            setInitialPage(pageNum ?? 1);
             setLoading(false);
 
             // update plugin store if you are the host
             if (enabledBy === peer.id) {
                 const DocumentStore = dytePlugin.stores.get('doc');
                 await DocumentStore.set('document', document);
-                await DocumentStore.set('page', 1);
+                await DocumentStore.set('page', pageNum ?? 1);
             };
             updateDoc(document);
-            updatePage(1);
         });
+
+        dytePlugin.room.on('skip-to-page', (data) => {
+            const { page: pageNum } = data;
+            setUpdating(true);
+            setInitialPage(pageNum);
+            updatePage(pageNum);
+        })
         dytePlugin.ready();
         setPlugin(dytePlugin);
     }
-
-    useEffect(() => {
-        loadPlugin();
-    }, [])
 
     return (
         <MainContext.Provider value={{
@@ -206,7 +215,10 @@ const MainProvider = ({ children }: { children: any }) => {
             recorder,
             annStore,
             activeTool,
+            initialPage,
             activeColor,
+            updating,
+            setUpdating,
             setActions,
             setPages,
             setKeys,

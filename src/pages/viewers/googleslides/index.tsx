@@ -3,7 +3,7 @@ import { debounce } from 'lodash';
 import { MainContext } from '../../../context';
 import Navbar from '../../../components/navbar';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { GoogleDimensions } from '../../../utils/constants';
+import { GoogleDimensions, googleID } from '../../../utils/constants';
 import useAnnotation from '../../../hooks/useAnnotation';
 import Toolbar from '../../../components/toolbar';
 import { color } from '../../../utils/annotations';
@@ -14,12 +14,10 @@ const DEFAULT_DIMENSIONS: GoogleDimensions = {
   y: 720,
 };
 
-let PAGE = 1;
-
 const SlidesViewer = () => {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<number>(1);
-  const [closing, setClosing] = useState<boolean>(false);
+  
   const [loading, setLoading] = useState<boolean>(true);
   const {
     svgRef,
@@ -34,6 +32,9 @@ const SlidesViewer = () => {
     setPages,
     setData,
     setActions,
+    initialPage,
+    updating,
+    setUpdating,
     actions,
     isRecorder,
     activeColor,
@@ -66,7 +67,6 @@ const SlidesViewer = () => {
 
   // On window resize
   useEffect(() => {
-    PAGE = page
     window.onresize = () => {
       updateDimensions();
     }
@@ -129,7 +129,7 @@ const SlidesViewer = () => {
   useEffect(() => {
     if (!plugin) return;
     plugin.addListener('closePlugin', () => {
-      setClosing(true);
+      setUpdating(true);
     })
     return () => {
       plugin.removeListeners('closePlugin')
@@ -185,7 +185,7 @@ const SlidesViewer = () => {
     plugin.emit('syncZoom', { zoom });
   }
   const close = async () => {
-    setClosing(true);
+    setUpdating(true);
     plugin.emit('closePlugin');
     const KeyStore: DyteStore = plugin.stores.get('keys');
     for(let i = 1; i <= pages; i++) {
@@ -216,13 +216,15 @@ const SlidesViewer = () => {
       if (data.event === 'load') {
         setLoading(false);
         setPages(parseInt(data.set));
+        plugin.room.emitEvent('page-changed', { page: initialPage, presentationId: doc.url.match(googleID)?.[0] });
         const iframe = document.getElementById('slides-viewer') as HTMLIFrameElement;
         if (actions?.length > 0) {
           iframe?.contentWindow?.postMessage({ event: 'update-actions', actions }, '*');
         }
+        setUpdating(false);
       }
       if (data.event === 'page') {
-        if (closing) return;
+        if (updating) return;
         setPage(parseInt(data.page), page);
       }
       if (data.event === 'keypress') {
@@ -236,7 +238,7 @@ const SlidesViewer = () => {
     return () => {
       window.removeEventListener('message', handlePostMessage);
     }
-  }, [page, actions, closing]);
+  }, [page, actions, updating]);
 
   return (
     <div id='slides-viewer-container'>
@@ -247,7 +249,7 @@ const SlidesViewer = () => {
         </div>
       }
       <iframe
-        src={`${doc?.url}?slide=${PAGE}`}
+        src={`${doc?.url}?slide=${initialPage}`}
         width={dimensions?.x ?? DEFAULT_DIMENSIONS.x}
         height={dimensions?.y ?? DEFAULT_DIMENSIONS.y}
         id='slides-viewer'
