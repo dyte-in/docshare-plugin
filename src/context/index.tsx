@@ -190,7 +190,7 @@ const MainProvider = ({ children }: { children: any }) => {
         });
 
         dytePlugin.room.on('skip-to-page', async (data) => {
-            const { page: pageNum } = data;
+            const { page: pageNum } = data.payload;
             setUpdating(true);
             setInitialPage(pageNum);
             updatePage(pageNum);

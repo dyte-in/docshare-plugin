@@ -238,7 +238,7 @@ const SlidesViewer = () => {
     return () => {
       window.removeEventListener('message', handlePostMessage);
     }
-  }, [page, actions, updating]);
+  }, [initialPage, page, actions, updating]);
 
   return (
     <div id='slides-viewer-container'>
