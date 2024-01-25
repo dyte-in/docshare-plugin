@@ -189,11 +189,15 @@ const MainProvider = ({ children }: { children: any }) => {
             updateDoc(document);
         });
 
-        dytePlugin.room.on('skip-to-page', (data) => {
+        dytePlugin.room.on('skip-to-page', async (data) => {
             const { page: pageNum } = data;
             setUpdating(true);
             setInitialPage(pageNum);
             updatePage(pageNum);
+            if (enabledBy === peer.id) {
+                const DocumentStore = dytePlugin.stores.get('doc');
+                await DocumentStore.set('page', pageNum ?? 1);
+            }
         })
         dytePlugin.ready();
         setPlugin(dytePlugin);
