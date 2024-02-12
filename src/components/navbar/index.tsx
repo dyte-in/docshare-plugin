@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import Icon from '../icon';
 import './style.css';
 
@@ -16,7 +17,27 @@ const Navbar = (props: Props) => {
     const {
         scale, page, pages, zoomIn, zoomOut, prev, next, close
     } = props;
+    const [visible, setVisible] = useState<boolean>(false);
 
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {;
+            const ratio = window.innerHeight * (2/3);
+            if (e.clientY < ratio) {
+                setVisible(false);
+            }
+            else {
+                setVisible(true);
+            }
+        }
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+        }
+    }, [visible])
+
+
+    if (visible)
     return (
         <div className='navbar'>
         <Icon icon='zoomIn' className='navbar-icon' onClick={zoomIn} />
@@ -30,6 +51,7 @@ const Navbar = (props: Props) => {
         <Icon icon='dismiss' className='navbar-icon-2' onClick={close} />
         </div>
     )
+    return null;
 }
 
 export default Navbar
