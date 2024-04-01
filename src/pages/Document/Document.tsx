@@ -1,5 +1,6 @@
 import './document.css';
 import 'core-js/features/array/at';
+import jsPDF from "jspdf";
 import { pdfjs, Document, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -22,14 +23,28 @@ interface DocumentProps {
   plugin: DytePlugin,
 }
 
+interface ImageDimension {
+  width: number;
+  height: number;
+};
+
+const A4_PAPER_DIMENSIONS = {
+  width: 210,
+  height: 297,
+  };
+  
+const A4_PAPER_RATIO = A4_PAPER_DIMENSIONS.width / A4_PAPER_DIMENSIONS.height;
+
 export default function PDFDocument(props: DocumentProps) {
   const { plugin } = props;
   const tool = useRef<ToolbarState>('none');
   const selectedElements = useRef<Set<string>>(new Set());
   const [docEl, docElUpdate, docElRef] = CanvasRef();
+  const [name, setName] = useState('Document');
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>();
   const {
     doc,
+    base,
     userId,
     annStore,
     followId,
@@ -38,10 +53,10 @@ export default function PDFDocument(props: DocumentProps) {
     setAnnStore,
     currentPage, 
     setCurrentPage,
-   
   } = useContext(MainContext);
 
   const [scale, setScale] = useState<number>(1);
+  const [downloadMode, setDownloadMode] = useState<string>('all');
   const [draw, setDraw] = useState<boolean>(false);
   const [pageCount, setPageCount] = useState<number>(0);
   const [activeColor, setActiveColor] = useState<string>('purple');
@@ -63,12 +78,18 @@ export default function PDFDocument(props: DocumentProps) {
     setDocumentDimensions();
   }, [docElUpdate, scale])
 
+  useEffect(() => {
+    if (!doc) return;
+    const fileName = doc.split('/')?.pop()?.replace(`${base}-`, '') ?? 'Document.pdf';
+    setName(fileName);
+  }, [doc])
+
   // tools
   useEffect(() => {
     if (activeTool === 'drawing-tool-erase-all') eraseAll();
     if (activeTool === 'zoom-in-tool') zoomIn();
     if (activeTool === 'zoom-out-tool') zoomOut();
-    if (activeTool === 'export-tool') exportPage();
+    if (activeTool === 'export-tool') exportDoc();
   }, [activeTool, draw])
 
   // Helper Methods
@@ -142,7 +163,8 @@ export default function PDFDocument(props: DocumentProps) {
       if (currentPage === 0) setCurrentPage(1);
     }
   }
-  const selectActiveTool = (state: ToolbarState) => {
+  const selectActiveTool = (state: ToolbarState, download?: 'doc' | 'notes') => {
+    if (download) setDownloadMode(download);
     tool.current = state;
     setActiveTool(state);
   }
@@ -620,33 +642,126 @@ export default function PDFDocument(props: DocumentProps) {
   }, [plugin, followId, userId])
 
   // Export
-  // TODO: export entire document
-  const exportPage = () => {
-    const doc = docEl.current;
-    const svg = document.getElementById('svg');
-    if (!doc || !svg) return;
-
-    const c = document.createElement('canvas');
-    const ctx = c.getContext('2d');
-    if (!ctx) return;
-    c.height = docEl.current.height;
-    c.width = docEl.current.width;
-    ctx.drawImage(docEl.current, 0, 0);
-    
+  const exportOriginalDoc = () => {
+    // export non-annotated doc
+    var xhr = new XMLHttpRequest();
+    xhr.responseType = 'blob';
+    xhr.onload = function() {
+      var a = document.createElement('a');
+      a.href = window.URL.createObjectURL(xhr.response); // xhr.response is a blob
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+    };
+    xhr.open('GET', doc);
+    xhr.send();
+    selectActiveTool('none');
+  }
+  const imageDimensionsOnA4 = (dimensions: ImageDimension) => {
+    const isLandscapeImage = dimensions.width >= dimensions.height;
+  
+    // If the image is in landscape, the full width of A4 is used.
+    if (isLandscapeImage) {
+      return {
+        width: A4_PAPER_DIMENSIONS.width,
+        height:
+          A4_PAPER_DIMENSIONS.width / (dimensions.width / dimensions.height),
+      };
+    }
+  
+    // If the image is in portrait and the full height of A4 would skew
+    // the image ratio, we scale the image dimensions.
+    const imageRatio = dimensions.width / dimensions.height;
+    if (imageRatio > A4_PAPER_RATIO) {
+      const imageScaleFactor =
+        (A4_PAPER_RATIO * dimensions.height) / dimensions.width;
+  
+      const scaledImageHeight = A4_PAPER_DIMENSIONS.height * imageScaleFactor;
+  
+      return {
+        height: scaledImageHeight,
+        width: scaledImageHeight * imageRatio,
+      };
+    }
+  
+    // The full height of A4 can be used without skewing the image ratio.
+    return {
+      width: A4_PAPER_DIMENSIONS.height / (dimensions.height / dimensions.width),
+      height: A4_PAPER_DIMENSIONS.height,
+    };
+};
+  const copyAnnotation = (doc: HTMLCanvasElement, svg: HTMLElement, newDoc: any) => {
     const img = new Image();
     var xml = new XMLSerializer().serializeToString(svg);
     var svg64 = btoa(xml);
     var b64Start = 'data:image/svg+xml;base64,';
     var image64 = b64Start + svg64;
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0);
-      const anchor = document.createElement('a');
-      anchor.href = c.toDataURL('image/png');
-      anchor.download = 'image.png';
-      anchor.click();
-      selectActiveTool('none');
-    }
+    const promise: Promise<boolean> = new Promise((resolve) => {
+      img.onload = () => {
+        doc.getContext('2d')?.drawImage(img, 0, 0, dimensions?.x ?? 0,
+          dimensions?.y ?? 0);
+          resolve(true);
+      }
+    })
     img.src = image64;
+    return promise;
+  }
+  const exportAnnotatedDoc = async () => {
+    const newDoc = new jsPDF();
+    newDoc.deletePage(1);
+    const d = await pdfjs.getDocument(doc).promise;
+    for(let i = 1; i <= pageCount; i++) {
+      // get page
+      const p = await d.getPage(i);
+      const viewport = p.getViewport({ scale: 1 });
+      // render on canvas
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.width = viewport.width + "px";
+      canvas.style.height =  viewport.height + "px";
+      var renderContext = {
+        canvasContext: context as CanvasRenderingContext2D,
+        viewport,
+      };
+      await p.render(renderContext as any).promise;
+      // get annotations
+      const annStore = `annotation-page-${i}`
+      const annotation = plugin.stores.get(annStore)?.getAll() ?? {};
+      const svg = document.getElementById('hiddensvg');
+      if (!svg) return;
+      svg.innerHTML = ''
+      Object.values(annotation).forEach(val => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.innerHTML = val;
+        svg.appendChild(g);
+      });
+      // render on canvas
+      await copyAnnotation(canvas, svg, newDoc);
+      // add to new doc
+      newDoc.addPage();
+      const imageDimensions = imageDimensionsOnA4({
+          width: canvas.width,
+          height: canvas.height,
+      });
+      newDoc.addImage(
+        canvas.toDataURL("image/jpg"),
+        'JPG',
+        (A4_PAPER_DIMENSIONS.width - imageDimensions.width) / 2,
+        (A4_PAPER_DIMENSIONS.height - imageDimensions.height) / 2,
+        imageDimensions.width,
+        imageDimensions.height,
+      )
+    }
+    // save doc
+    newDoc.save(`Notes-${name}`);
+    selectActiveTool('none');
+  }
+  const exportDoc = () => {
+   if(downloadMode == 'doc') exportOriginalDoc();
+   else exportAnnotatedDoc();
   }
 
   // Go Back
@@ -711,6 +826,7 @@ export default function PDFDocument(props: DocumentProps) {
         onNext={handleNext}
         onPrev={handlePrev}
       />
+      {dimensions?.x && dimensions?.y && (<svg id="hiddensvg" xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${dimensions?.x} ${dimensions?.y}`}></svg>)}
     </div>
   );
 }

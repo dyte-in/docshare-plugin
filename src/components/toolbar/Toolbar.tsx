@@ -2,7 +2,7 @@ import './toolbar.css';
 import { Icon, Tooltip } from '..';
 import { ToolbarState } from '../../utils/types';
 import { colors, tools } from '../../utils/contants';
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { MainContext } from '../../context';
 
 
@@ -11,7 +11,7 @@ interface ToolbarRightProps {
   activeTool: ToolbarState;
   onBack: () => void;
   setActiveColor: (col: string) => void;
-  selectActiveTool: (state: ToolbarState) => void;
+  selectActiveTool: (state: ToolbarState, downloadMode?: 'doc' | 'notes') => void;
 }
 
 interface ToolbarLeftProps {
@@ -28,6 +28,7 @@ interface ToolbarTopProps {
 
 const ToolbarRight = (props: ToolbarRightProps) => {
   const ref = useRef<HTMLDivElement>(null);
+  const [showDownloadOptions, setShowDownloadOptions] = useState<boolean>(false);
   const {
     activeTool,
     activeColor,
@@ -74,6 +75,10 @@ const ToolbarRight = (props: ToolbarRightProps) => {
     
   }, [])
 
+  const handleDownload = () => {
+    setShowDownloadOptions(!showDownloadOptions);
+  }
+
   return (
     <div className="toolbar-right">
         <Tooltip label="Dismiss" align='bottom-left'>
@@ -83,11 +88,28 @@ const ToolbarRight = (props: ToolbarRightProps) => {
           !isRecorder && (
             <div className="toolbar-tools" id="toolbar">
               {
-                tools.map(({icon, tool, label }, index) => (
-                  <Tooltip key={index} label={label}>
-                  <Icon key={tool} icon={icon} onClick={() => selectActiveTool(tool)} className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
-                  </Tooltip>
-                ))
+                tools.map(({icon, tool, label }, index) => {
+                  if (label === 'Download') return (
+                    <div className="download-tool">
+                      <Icon
+                        key={tool}
+                        icon={icon} 
+                        onClick={handleDownload}
+                        className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
+                      {
+                        label === 'Download' && showDownloadOptions && <div className="download-options">
+                          <div className="download-opt" onClick={() => selectActiveTool('export-tool', 'doc')}>Download Original</div>
+                          <div className="download-opt" onClick={() => selectActiveTool('export-tool', 'notes')}>Download Notes</div>
+                        </div>
+                      }
+                    </div>
+                  )
+                  return (
+                    <Tooltip key={index} label={label}>
+                      <Icon key={tool} icon={icon} onClick={() => selectActiveTool(tool)} className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
+                    </Tooltip>
+                  )
+                })
               }
               <div id="color" className={`color ${activeColor}`}></div>
               <div ref={ref} className="color-selector">

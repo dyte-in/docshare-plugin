@@ -73,3 +73,12 @@
 .toolbar-tools::-webkit-scrollbar-thumb {
     @apply w-1 bg-slate-400 rounded-md;
 }
+.download-tool {
+    @apply relative;
+}
+.download-options {
+    @apply absolute top-0 right-10 bg-slate-200 p-1 border-solid border-[1px] border-gray-400 bg-[#E9F5FF] text-[#7e8991] rounded-md flex flex-col text-xs w-36;
+}
+.download-opt {
+    @apply p-1 cursor-pointer;
+}
