@@ -134,6 +134,10 @@ const MainProvider = ({ children }: { children: any }) => {
             updatePage(p);
             dytePlugin.room.emitEvent('page-changed', { page: p, presentationId: doc?.url.match(googleID)?.[0] });
         });
+        dytePlugin.on('remote-skip-to-page', ({ page: p}) => {
+            setUpdating(true);
+            setInitialPage(p);
+        })
 
         // listen to events
         dytePlugin.on('remote-keypress', ({ code }: { code: number }) => {
@@ -194,10 +198,9 @@ const MainProvider = ({ children }: { children: any }) => {
             setUpdating(true);
             setInitialPage(pageNum);
             updatePage(pageNum);
-            if (enabledBy === peer.id) {
-                const DocumentStore = dytePlugin.stores.get('doc');
-                await DocumentStore.set('page', pageNum ?? 1);
-            }
+            const DocumentStore = dytePlugin.stores.get('doc');
+            await DocumentStore.set('page', pageNum ?? 1);
+            dytePlugin.emit('remote-skip-to-page', { page: pageNum ?? 1});
         })
         dytePlugin.ready();
         setPlugin(dytePlugin);
