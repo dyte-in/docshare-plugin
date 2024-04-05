@@ -32,7 +32,7 @@
     border-radius: 4px;
 }
 .color-selector {
-    @apply p-1 absolute bottom-0 right-11 rounded-md border-solid border-[1px] border-gray-400 bg-[#E9F5FF] flex flex-row !flex-wrap w-24 items-center justify-center;
+    @apply p-1 absolute bottom-0 right-11 rounded-md border-solid border-[1px] border-gray-400 bg-[#E9F5FF] flex flex-row !flex-wrap w-24 items-center justify-center hidden;
     max-height: 300px;
 }
 .color {
