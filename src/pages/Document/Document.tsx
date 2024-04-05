@@ -7,7 +7,7 @@ import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useContext, useEffect, useRef, useState } from 'react';
 import {ToolbarRight, ToolbarLeft, ToolbarTop } from '../../components';
 import CanvasRef from '../../hooks/StatefulRef';
-import { color, throttle } from '../../utils/helpers';
+import { blobToBase64, color, throttle } from '../../utils/helpers';
 import { CursorPoints, ToolbarState } from '../../utils/types';
 import { options } from '../../utils/contants';
 import { MainContext } from '../../context';
@@ -56,7 +56,6 @@ export default function PDFDocument(props: DocumentProps) {
   } = useContext(MainContext);
 
   const [scale, setScale] = useState<number>(1);
-  const [downloadMode, setDownloadMode] = useState<string>('all');
   const [draw, setDraw] = useState<boolean>(false);
   const [pageCount, setPageCount] = useState<number>(0);
   const [activeColor, setActiveColor] = useState<string>('purple');
@@ -80,7 +79,8 @@ export default function PDFDocument(props: DocumentProps) {
 
   useEffect(() => {
     if (!doc) return;
-    const fileName = doc.split('/')?.pop()?.replace(`${base}-`, '') ?? 'Document.pdf';
+    let fileName = doc.split('/')?.pop()?.replace(`${base}-`, '') ?? 'Document.pdf';
+    fileName = fileName.split('.')[0] + '.pdf';
     setName(fileName);
   }, [doc])
 
@@ -163,8 +163,7 @@ export default function PDFDocument(props: DocumentProps) {
       if (currentPage === 0) setCurrentPage(1);
     }
   }
-  const selectActiveTool = (state: ToolbarState, download?: 'doc' | 'notes') => {
-    if (download) setDownloadMode(download);
+  const selectActiveTool = (state: ToolbarState) => {
     tool.current = state;
     setActiveTool(state);
   }
@@ -707,8 +706,8 @@ export default function PDFDocument(props: DocumentProps) {
     img.src = image64;
     return promise;
   }
-  const exportAnnotatedDoc = async () => {
-    const newDoc = new jsPDF();
+  const exportAnnotatedDoc = async (viaApi?: boolean) => {
+    const newDoc = new jsPDF(undefined, undefined, 'a4', true);
     newDoc.deletePage(1);
     const d = await pdfjs.getDocument(doc).promise;
     for(let i = 1; i <= pageCount; i++) {
@@ -733,13 +732,17 @@ export default function PDFDocument(props: DocumentProps) {
       const svg = document.getElementById('hiddensvg');
       if (!svg) return;
       svg.innerHTML = ''
+      let hasAnnotations = false;
       Object.values(annotation).forEach(val => {
+        hasAnnotations = true;
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.innerHTML = val;
         svg.appendChild(g);
       });
-      // render on canvas
-      await copyAnnotation(canvas, svg, newDoc);
+      if (hasAnnotations) {
+        // render on canvas
+        await copyAnnotation(canvas, svg, newDoc);
+      }
       // add to new doc
       newDoc.addPage();
       const imageDimensions = imageDimensionsOnA4({
@@ -756,13 +759,33 @@ export default function PDFDocument(props: DocumentProps) {
       )
     }
     // save doc
-    newDoc.save(`Notes-${name}`);
-    selectActiveTool('none');
+    if (viaApi) {
+      return newDoc.output('blob');
+    } else {
+      newDoc.save(`Notes-${name}`);
+      selectActiveTool('none');
+    }
   }
   const exportDoc = () => {
-   if(downloadMode == 'doc') exportOriginalDoc();
-   else exportAnnotatedDoc();
+   exportOriginalDoc();
+   exportAnnotatedDoc();
   }
+
+  // Export via APIs
+  useEffect(() => {
+    if (!plugin) return;
+    const saveBoardListener = async () => {
+      const doc = await exportAnnotatedDoc(true);
+      if (!doc) return;
+      const notes = await blobToBase64(doc);
+      plugin.room.emitEvent('board-saved', { notes });
+    }
+    plugin.room.on('save-board', saveBoardListener);
+
+    return () => {
+      plugin.room.removeListeners('save-board');
+    };
+  }, [plugin])
 
   // Go Back
   const HandleBack = async () => {

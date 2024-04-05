@@ -14,6 +14,15 @@ const throttle = (cb: any, delay: number) => {
         }
     }
 }
+const blobToBase64 = (blob: Blob): Promise<string> => {
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    return new Promise(resolve => {
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+    });
+};
 const color = (activeColor: string): string => {
     switch(activeColor) {
         case 'pink':
@@ -100,4 +109,4 @@ const fetchUrl = async (formData: FormData, authToken: string, setLoadingVal?: a
 
 
 
-export { getFormData, fetchUrl, throttle, color, colorRgb }
+export { getFormData, fetchUrl, throttle, color, colorRgb, blobToBase64 }

@@ -11,7 +11,7 @@ interface ToolbarRightProps {
   activeTool: ToolbarState;
   onBack: () => void;
   setActiveColor: (col: string) => void;
-  selectActiveTool: (state: ToolbarState, downloadMode?: 'doc' | 'notes') => void;
+  selectActiveTool: (state: ToolbarState) => void;
 }
 
 interface ToolbarLeftProps {
@@ -28,7 +28,6 @@ interface ToolbarTopProps {
 
 const ToolbarRight = (props: ToolbarRightProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const [showDownloadOptions, setShowDownloadOptions] = useState<boolean>(false);
   const {
     activeTool,
     activeColor,
@@ -75,10 +74,6 @@ const ToolbarRight = (props: ToolbarRightProps) => {
     
   }, [])
 
-  const handleDownload = () => {
-    setShowDownloadOptions(!showDownloadOptions);
-  }
-
   return (
     <div className="toolbar-right">
         <Tooltip label="Dismiss" align='bottom-left'>
@@ -89,21 +84,6 @@ const ToolbarRight = (props: ToolbarRightProps) => {
             <div className="toolbar-tools" id="toolbar">
               {
                 tools.map(({icon, tool, label }, index) => {
-                  if (label === 'Download') return (
-                    <div className="download-tool">
-                      <Icon
-                        key={tool}
-                        icon={icon} 
-                        onClick={handleDownload}
-                        className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
-                      {
-                        label === 'Download' && showDownloadOptions && <div className="download-options">
-                          <div className="download-opt" onClick={() => selectActiveTool('export-tool', 'doc')}>Download Original</div>
-                          <div className="download-opt" onClick={() => selectActiveTool('export-tool', 'notes')}>Download Notes</div>
-                        </div>
-                      }
-                    </div>
-                  )
                   return (
                     <Tooltip key={index} label={label}>
                       <Icon key={tool} icon={icon} onClick={() => selectActiveTool(tool)} className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
