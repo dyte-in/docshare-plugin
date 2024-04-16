@@ -641,21 +641,28 @@ export default function PDFDocument(props: DocumentProps) {
   }, [plugin, followId, userId])
 
   // Export
-  const exportOriginalDoc = () => {
+  const exportOriginalDoc = (viaApi?: boolean): Promise<Blob | undefined> => {
     // export non-annotated doc
     var xhr = new XMLHttpRequest();
     xhr.responseType = 'blob';
-    xhr.onload = function() {
-      var a = document.createElement('a');
-      a.href = window.URL.createObjectURL(xhr.response); // xhr.response is a blob
-      a.download = name;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-    };
-    xhr.open('GET', doc);
-    xhr.send();
-    selectActiveTool('none');
+    return new Promise((resolve) => {
+      xhr.onload = function() {
+        if (viaApi) {
+          resolve(xhr.response);
+          return;
+        } 
+        var a = document.createElement('a');
+        a.href = window.URL.createObjectURL(xhr.response); // xhr.response is a blob
+        a.download = name;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        selectActiveTool('none');
+        resolve(undefined);
+      }
+      xhr.open('GET', doc);
+      xhr.send();
+    })
   }
   const imageDimensionsOnA4 = (dimensions: ImageDimension) => {
     const isLandscapeImage = dimensions.width >= dimensions.height;
@@ -690,7 +697,7 @@ export default function PDFDocument(props: DocumentProps) {
       height: A4_PAPER_DIMENSIONS.height,
     };
 };
-  const copyAnnotation = (doc: HTMLCanvasElement, svg: HTMLElement, newDoc: any) => {
+  const copyAnnotation = (doc: HTMLCanvasElement, svg: HTMLElement) => {
     const img = new Image();
     var xml = new XMLSerializer().serializeToString(svg);
     var svg64 = btoa(xml);
@@ -741,7 +748,7 @@ export default function PDFDocument(props: DocumentProps) {
       });
       if (hasAnnotations) {
         // render on canvas
-        await copyAnnotation(canvas, svg, newDoc);
+      await copyAnnotation(canvas, svg);
       }
       // add to new doc
       newDoc.addPage();
@@ -775,17 +782,20 @@ export default function PDFDocument(props: DocumentProps) {
   useEffect(() => {
     if (!plugin) return;
     const saveBoardListener = async () => {
-      const doc = await exportAnnotatedDoc(true);
-      if (!doc) return;
-      const notes = await blobToBase64(doc);
-      plugin.room.emitEvent('board-saved', { notes });
+      const [ doc1, doc2 ] = await Promise.all([exportAnnotatedDoc(true), exportOriginalDoc(true)]);
+      if (!doc1 || !doc2) {
+        plugin.room.emitEvent('board-saved', { notes: undefined, original: undefined });
+        return;
+      }
+      const [notes1, notes2 ] = await Promise.all([blobToBase64(doc1), blobToBase64(doc2)]);
+      plugin.room.emitEvent('board-saved', { notes: notes1, original: notes2 });
     }
     plugin.room.on('save-board', saveBoardListener);
 
     return () => {
       plugin.room.removeListeners('save-board');
     };
-  }, [plugin])
+  }, [plugin, pageCount, doc, dimensions])
 
   // Go Back
   const HandleBack = async () => {
