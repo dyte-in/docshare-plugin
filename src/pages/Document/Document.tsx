@@ -568,7 +568,7 @@ export default function PDFDocument(props: DocumentProps) {
   }
   // zoom and scroll sync listeners
   useEffect(() => {
-    if (!plugin || !isRecorder) return;
+    if (!plugin) return;
     plugin.addListener('syncZoom', ({ zoom }) => {
       selectActiveTool('none');
       updateDocPosition(zoom);
@@ -594,7 +594,7 @@ export default function PDFDocument(props: DocumentProps) {
       plugin.removeListeners('syncZoom');
       plugin.removeListeners('syncScroll');
     }
-  }, [plugin, isRecorder])
+  }, [plugin])
 
 
   // sync scroll - host
