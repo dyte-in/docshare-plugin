@@ -76,3 +76,6 @@
 #tracer-element {
     @apply absolute h-10 w-10 border-dashed border-2 border-gray-300 top-0 left-0 rounded-sm hidden;
 }
+#hiddensvg {
+    @apply hidden;
+}

@@ -2,7 +2,7 @@ import './toolbar.css';
 import { Icon, Tooltip } from '..';
 import { ToolbarState } from '../../utils/types';
 import { colors, tools } from '../../utils/contants';
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { MainContext } from '../../context';
 
 
@@ -83,11 +83,13 @@ const ToolbarRight = (props: ToolbarRightProps) => {
           !isRecorder && (
             <div className="toolbar-tools" id="toolbar">
               {
-                tools.map(({icon, tool, label }, index) => (
-                  <Tooltip key={index} label={label}>
-                  <Icon key={tool} icon={icon} onClick={() => selectActiveTool(tool)} className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
-                  </Tooltip>
-                ))
+                tools.map(({icon, tool, label }, index) => {
+                  return (
+                    <Tooltip key={index} label={label}>
+                      <Icon key={tool} icon={icon} onClick={() => selectActiveTool(tool)} className={`toolbar-drawing-icon ${activeTool === tool ? 'active' : ''}`}/>
+                    </Tooltip>
+                  )
+                })
               }
               <div id="color" className={`color ${activeColor}`}></div>
               <div ref={ref} className="color-selector">

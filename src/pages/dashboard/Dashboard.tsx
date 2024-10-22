@@ -21,6 +21,17 @@ const Dashboard = () => {
     }, [])
 
     useEffect(() => {
+        if (!plugin) return;
+        const saveBoardListener = async () => {
+            plugin?.room.emitEvent('board-saved', { notes: undefined, original: undefined });
+          }
+          plugin?.room.on('save-board', saveBoardListener);
+        return () => {
+            plugin?.room.removeListeners('save-board');
+        }
+    }, [plugin])
+
+    useEffect(() => {
         plugin.on('file-delete', (data: any) => {
             setFiles([...files.filter(x => x !== data.fileName)])
         })
