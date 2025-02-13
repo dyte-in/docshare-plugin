@@ -14,13 +14,13 @@
   "license": "ISC",
   "dependencies": {
     "@dytesdk/plugin-sdk": "^2.1.3",
-    "axios": "^1.4.0",
+    "axios": "^1.7.4",
     "core-js": "^3.30.2",
     "jspdf": "^2.5.1",
     "react": "^18.2.0",
     "react-app-polyfill": "^3.0.0",
     "react-dom": "^18.2.0",
-    "react-pdf": "^7.0.1"
+    "react-pdf": "^7.7.3"
   },
   "devDependencies": {
     "@types/react": "^18.0.37",
@@ -32,9 +32,9 @@
     "eslint": "^8.38.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.3.4",
-    "postcss": "^8.4.23",
+    "postcss": "^8.5.2",
     "tailwindcss": "^3.3.2",
     "typescript": "^5.0.2",
-    "vite": "^4.3.2"
+    "vite": "^4.5.9"
   }
 }
