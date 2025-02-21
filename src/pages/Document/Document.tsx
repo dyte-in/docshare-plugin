@@ -542,7 +542,11 @@ export default function PDFDocument(props: DocumentProps) {
     text.setAttribute('id', `${userId}-${EL_COUNT}`);
 
     EL_COUNT++;
-    text.innerHTML = `<div style="width:${w}px; height:${h}px; color:${color(activeColor)}">${elem.value}</div>`;
+    const node = document.createTextNode(elem.value);
+    text.appendChild(node);
+    text.style.width = `${w}px`;
+    text.style.height = `${h}px`;
+    text.style.color = color(activeColor);
     text.style.fontSize = '14px';
     text.style.fontFamily = 'Open Sans';
     svg?.appendChild(text);
