@@ -1,3 +1,5 @@
+@import "tailwindcss" reference;
+
 .file-input {
     @apply bg-[#E0EBF4] rounded-xl flex flex-col items-center justify-center mt-3 px-2 py-4 cursor-pointer; 
     width: 70%;

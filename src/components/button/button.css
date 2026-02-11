@@ -1,3 +1,5 @@
+@import "tailwindcss" reference;
+
 .button {
     @apply m-1 bg-black p-1 rounded-md outline-none border-none text-sm text-white flex flex-row items-center px-4;
 }

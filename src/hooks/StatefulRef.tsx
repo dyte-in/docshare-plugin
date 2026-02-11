@@ -1,7 +1,7 @@
 import { useState, RefObject, useCallback, useRef } from "react";
 
 const CanvasRef = (): [
-  RefObject<HTMLCanvasElement>,
+  RefObject<HTMLCanvasElement | null>,
   boolean,
   (node: HTMLCanvasElement) => void
   ] => {
