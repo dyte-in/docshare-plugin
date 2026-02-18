@@ -1,11 +1,21 @@
+@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600&display=swap');
+
+@theme {
+  --color-bg-400: #d7d8d9;
+  --color-fade-100: rgba(242,249,255,0.6);
+  --color-fade-200: rgba(242,249,255, 1);
+  --font-family-open-sans: 'Open Sans', sans-serif;
+}
+
 * {
     box-sizing: border-box;
     touch-action: none !important;
   }
 
 body {
-  @apply p-0 m-0 max-w-full font-open-sans w-full min-h-full bg-white;
+  @apply p-0 m-0 w-full h-full bg-white;
+  font-family: 'Open Sans', sans-serif;
   background-size: 3rem 3rem;
   background-image:
   linear-gradient(to right, theme('colors.bg.400') 0.063rem, transparent 0.063rem),
@@ -30,6 +40,7 @@ body {
 .container {
   @apply w-full flex flex-col;
   min-height: 100vh;
+  min-width:100vw;
   box-sizing: border-box;
   background: radial-gradient(circle, theme('colors.fade.100') 0%, theme('colors.fade.200') 100%);
 }

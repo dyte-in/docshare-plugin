@@ -1,3 +1,5 @@
+@import "tailwindcss" reference;
+
 .toolbar-left {
     @apply fixed top-2 left-2 z-50 flex;
 }

@@ -1,3 +1,5 @@
+@import "tailwindcss" reference;
+
 .tooltip-container {
     @apply relative;
     z-index: 999999;

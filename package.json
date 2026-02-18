@@ -7,12 +7,15 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview --port 5000"
+    "preview": "vite preview --port 5000",
+    "cf:deploy": "npm run build && wrangler deploy",
+    "cf:dev": "npm run build && wrangler dev"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@typescript-eslint/eslint-plugin": "^8.24.1",
@@ -25,7 +28,8 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^4.0.7",
     "typescript": "^5.7.3",
-    "vite": "^6.1.1"
+    "vite": "^6.1.1",
+    "wrangler": "^3.109.0"
   },
   "dependencies": {
     "@dytesdk/plugin-sdk": "^2.4.2",

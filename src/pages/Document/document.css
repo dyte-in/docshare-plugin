@@ -1,3 +1,5 @@
+@import "tailwindcss" reference;
+
 .view-box {
     @apply relative box-border flex flex-1 items-center justify-center overflow-auto bg-[#F2F9FF];
     height: 100vh;
@@ -58,8 +60,9 @@
 }
 
 #text-tool {
-    @apply border-dashed border-2 border-gray-500 absolute rounded-sm hidden bg-none box-border z-50 resize-none font-open-sans text-sm;
+    @apply border-dashed border-2 border-gray-500 absolute rounded-sm hidden bg-none box-border z-50 resize-none text-sm;
     padding: 5px;
+    font-family: 'Open Sans', sans-serif;
 }
 
 #text-tool::placeholder {

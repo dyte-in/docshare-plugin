@@ -1,3 +1,5 @@
+@import "tailwindcss" reference;
+
 .error-modal-container {
     @apply z-50 fixed w-full h-full bg-black/20 top-0 left-0 flex flex-col items-center justify-center;
 }

@@ -79,9 +79,9 @@ const colorRgb = (activeColor: string): string => {
         return 'rgb(0,0,0)';
     }
 }
-const getFormData = (file: Blob, base: string) => {
+const getFormData = (file: Blob | File, base: string) => {
     const formData = new FormData();
-    const fileName = `${base}-${file.name ?? (Math.random()*10000).toFixed(0)}`;
+    const fileName = `${base}-${(file as File).name ?? (Math.random()*10000).toFixed(0)}`;
     formData.append("file", file, fileName);
     return {formData, fileName: fileName };
 }

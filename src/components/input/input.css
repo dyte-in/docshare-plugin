@@ -1,10 +1,13 @@
+@import "tailwindcss" reference;
+
 .input-container {
     @apply box-border flex flex-row flex-grow items-center justify-start p-1 ml-4 mr-2 h-fit border-gray-300 rounded-md bg-[#DCE5ED];
     
 }
 .input-container input {
-    @apply m-0 p-0 text-gray-900 bg-[#DCE5ED] border-none outline-none text-sm flex-grow font-open-sans;
+    @apply m-0 p-0 text-gray-900 bg-[#DCE5ED] border-none outline-none text-sm flex-grow;
     min-width: 50px;
+    font-family: 'Open Sans', sans-serif;
 }
 
 .input-container input::placeholder {
