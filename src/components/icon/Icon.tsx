@@ -22,7 +22,7 @@ const Icon = (props: Props) => {
 
   return (
     <div id='icon-cont' onClick={onClick} className={`icon-wrapper ${className}`}>
-      <img src={imgSrc} />
+      {imgSrc ? <img src={imgSrc} /> : null}
     </div>
   )
 }

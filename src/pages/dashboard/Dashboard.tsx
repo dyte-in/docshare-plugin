@@ -43,7 +43,9 @@ const Dashboard = () => {
     // Load remote documents
     const fetchFiles = async () => {
         try {
-            const files = await axios.get(`${import.meta.env.VITE_API_BASE}/files/${base}`);
+            const files = await axios.get(`${import.meta.env.VITE_API_BASE}/files/${base}`, {
+                headers: {"Authorization": `Bearer ${plugin.authToken}`},
+            });
             setFiles(files.data.files);
         } catch (e) {
             setStatus(dashboardMessages.error);
